@@ -1,0 +1,4459 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=ai-legible&utm_source=comment&utm_medium=referral&utm_id=d8d33d17-b6d7-4965-8e00-b82c706e0ba4
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+<meta name="hosting-provider" content="Netlify">
+<meta name="netlify-deploy" content="https://netlify.new/?utm_campaign=ai-legible&amp;utm_source=meta&amp;utm_medium=referral&amp;utm_id=d8d33d17-b6d7-4965-8e00-b82c706e0ba4">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sri Net Park — Daily Cash Memo & Bill Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Fonts for the Daily Collection Register (scoped to #admin-collection only) -->
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0F2036; --navy-2:#16304F; --teal:#237A6B; --teal-light:#E4F1EE;
+    --red:#C63C34; --red-light:#FBE8E6; --amber:#B5790A; --amber-light:#FBF0DC;
+    --green:#2E7D32; --green-light:#E8F5E9;
+    --bg:#F5F6F8; --card:#FFFFFF; --border:#E2E5EA; --text:#1B2430; --muted:#6B7686;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+  h1,h2,h3,h4{font-family:'Sora',sans-serif;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  button{font-family:'Inter',sans-serif;cursor:pointer;border:none;}
+  input,select,textarea{font-family:'Inter',sans-serif;}
+
+  /* LOGIN */
+  #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 20% 20%, #16304F 0%, #0F2036 55%, #0A1626 100%);padding:20px;}
+  .login-card{background:var(--card);width:100%;max-width:400px;border-radius:14px;padding:40px 34px;box-shadow:0 30px 60px rgba(0,0,0,0.35);}
+  .login-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.12em;color:var(--teal);text-transform:uppercase;margin-bottom:6px;}
+  .login-card h1{font-size:22px;color:var(--navy);margin-bottom:4px;}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:26px;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+  .field input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;transition:border-color .15s;}
+  .field input:focus{border-color:var(--teal);}
+  .btn-primary{width:100%;padding:12px;background:var(--navy);color:#fff;border-radius:8px;font-size:14px;font-weight:600;margin-top:6px;transition:background .15s;}
+  .btn-primary:hover{background:var(--teal);}
+  .login-error{color:var(--red);font-size:13px;margin-top:10px;min-height:16px;}
+  .role-switch{display:flex;background:#F0F1F4;border-radius:9px;padding:4px;margin-bottom:26px;}
+  .role-switch-btn{flex:1;padding:9px 10px;border-radius:6px;font-size:13px;font-weight:600;background:none;color:var(--muted);}
+  .role-switch-btn.active{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+  .cred-hint{margin-top:14px;font-size:11.5px;color:var(--muted);text-align:center;background:#F5F6F8;border-radius:7px;padding:8px 10px;}
+  .cred-hint .mono{color:var(--navy);font-weight:600;}
+
+  /* APP */
+  #app{display:none;min-height:100vh;}
+  .shell{display:flex;min-height:100vh;}
+  .sidebar{width:230px;background:var(--navy);color:#fff;flex-shrink:0;display:flex;flex-direction:column;padding:26px 18px;}
+  .brand{font-size:16px;font-weight:700;line-height:1.3;}
+  .brand-sub{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8FB3AC;margin-bottom:30px;letter-spacing:.06em;margin-top:6px;}
+  .role-tag{display:inline-block;font-size:10px;background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:20px;margin-top:8px;letter-spacing:.05em;}
+  .nav-section-title{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#6F839B;margin:18px 10px 8px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#C7D3E0;font-size:13px;font-weight:500;margin-bottom:4px;background:none;text-align:left;width:100%;transition:background .15s,color .15s;}
+  .nav-icon{width:18px;min-width:18px;text-align:center;font-size:13px;opacity:.9;}
+  .nav-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
+  .nav-item.active{background:var(--teal);color:#fff;}
+  .logout-btn{margin-top:auto;background:none;color:#8FA0B5;font-size:13px;padding:10px 12px;text-align:left;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;}
+  .logout-btn:hover{color:#fff;}
+  .main{flex:1;padding:34px 40px;max-width:1300px;overflow-y:auto;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page-head{margin-bottom:26px;}
+  .page-head .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--teal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}
+  .page-head h2{font-size:26px;color:var(--navy);}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:22px;}
+  .card h3{font-size:15px;color:var(--navy);margin-bottom:16px;}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;}
+  .row .field{flex:1;min-width:140px;margin-bottom:0;}
+  .row .field input,.row .field select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;}
+  .row .field input:focus,.row .field select:focus{outline:none;border-color:var(--teal);}
+  .btn{padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;white-space:nowrap;}
+  .btn-teal{background:var(--teal);color:#fff;}
+  .btn-teal:hover{background:#1c6255;}
+  .btn-green{background:var(--green);color:#fff;}
+  .btn-green:hover{background:#1b5e20;}
+  .btn-outline{background:#fff;border:1.5px solid var(--border);color:var(--navy);}
+  .btn-outline:hover{border-color:var(--teal);color:var(--teal);}
+  .btn-small{padding:6px 12px;font-size:12px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;padding:10px 12px;background:#F5F6F8;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;border-bottom:1px solid var(--border);}
+  td{padding:10px 12px;border-bottom:1px solid #EEF0F3;}
+  tr:last-child td{border-bottom:none;}
+  tr.total-row{background:#F5F6F8;font-weight:600;border-top:2px solid var(--border);}
+
+  .stat-strip{display:flex;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+  .stat-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;flex:1;min-width:140px;}
+  .stat-box .label{font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.05em;margin-bottom:6px;}
+  .stat-box .value{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--navy);}
+  .stat-box.alert .value{color:var(--red);}
+  .stat-box.success .value{color:var(--green);}
+
+  .item-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .item-row .field{margin-bottom:0;}
+  .item-row input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;}
+  .item-row input:focus{outline:none;border-color:var(--teal);}
+
+  .status-active{display:inline-block;padding:4px 9px;border-radius:20px;background:var(--green-light);color:var(--green);font-size:11px;font-weight:600;}
+  .empty-note{color:var(--muted);font-size:13.5px;padding:20px 0;text-align:center;}
+  .success-msg{background:var(--green-light);border:1px solid #81C784;color:var(--green);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;}
+  .error-msg{background:var(--red-light);border:1px solid #EF9A9A;color:var(--red);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;}
+
+  /* Bill Card */
+  .bill-card{background:#F9F9F9;border:1px solid #DDD;border-radius:8px;padding:12px;margin-bottom:10px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;}
+  .bill-card .info{font-size:12px;}
+  .bill-card .info-main{font-weight:600;color:var(--navy);}
+  .bill-card .amount{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--teal);font-size:14px;}
+  .bill-actions{display:flex;gap:6px;}
+  .bill-actions .btn{margin:0;}
+
+  .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;}
+  .modal.active{display:flex;}
+  .modal-content{background:white;border-radius:12px;padding:30px;max-width:900px;max-height:85vh;overflow-y:auto;width:90%;}
+  .modal-close{position:absolute;top:10px;right:15px;font-size:28px;cursor:pointer;color:#999;}
+  .modal-close:hover{color:#000;}
+
+  @media (max-width:720px){
+    .shell{flex-direction:column;}
+    .sidebar{width:100%;flex-direction:row;align-items:center;padding:14px 16px;overflow-x:auto;}
+    .brand,.brand-sub,.role-tag{display:none;}
+    .logout-btn{margin-top:0;border-top:none;padding-top:10px;}
+    .nav-section-title{display:none;}
+    .nav-item{white-space:nowrap;}
+    .main{padding:22px 18px;}
+    .item-row{grid-template-columns:1fr;}
+    .bill-card{grid-template-columns:1fr;}
+  }
+
+  /* Global font override — Times New Roman used everywhere (login screen,
+     sidebar, dashboard, tables, Daily Collection Register, forms, etc.) */
+  *{font-family:'Times New Roman', Times, serif !important;}
+
+  /* ===== Daily Collection Register (scoped to #admin-collection so it
+     never affects any other page's .card/.field/.btn/table styling) ===== */
+  #admin-collection{
+    --dcr-paper-panel:#FBF8F1;
+    --dcr-ink:#1C2541;
+    --dcr-ink-soft:#4A5170;
+    --dcr-gold:#9C6B24;
+    --dcr-line:#DCD3BC;
+    --dcr-danger:#B3492B;
+    --dcr-danger-bg:#F6E4DC;
+    --dcr-good:#3F6B4B;
+    --dcr-good-bg:#E4EEE3;
+  }
+  #admin-collection .dcr-card{
+    background:var(--dcr-paper-panel);
+    border:1px solid var(--dcr-line);
+    border-radius:10px;
+    padding:16px 16px 18px;
+    margin-bottom:16px;
+  }
+  #admin-collection .dcr-card-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--dcr-gold);
+    margin:0 0 12px;
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  #admin-collection .dcr-date-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  #admin-collection .dcr-date-row label{font-size:12.5px;color:var(--dcr-ink-soft);font-family:'IBM Plex Sans',sans-serif;}
+  #admin-collection .dcr-date-row input{
+    border:1px solid var(--dcr-line);
+    border-radius:6px;
+    padding:6px 8px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13.5px;
+    background:#fff;
+  }
+  #admin-collection .dcr-table{width:100%;border-collapse:collapse;font-family:'IBM Plex Sans',sans-serif;}
+  #admin-collection .dcr-table thead th{
+    text-align:left;
+    font-size:11.5px;
+    font-weight:500;
+    color:var(--dcr-ink-soft);
+    padding-bottom:6px;
+    border-bottom:1px solid var(--dcr-line);
+  }
+  #admin-collection .dcr-table thead th.num{text-align:right;}
+  #admin-collection .dcr-table tbody td{
+    padding:7px 0;
+    border-bottom:1px solid var(--dcr-line);
+    vertical-align:middle;
+  }
+  #admin-collection .dcr-svc-name-input{
+    border:none;
+    background:transparent;
+    font-size:14px;
+    font-family:'IBM Plex Sans',sans-serif;
+    color:var(--dcr-ink);
+    width:100%;
+    padding:2px 0;
+  }
+  #admin-collection .dcr-svc-name-input:focus{outline:none;border-bottom:1px dashed var(--dcr-gold);}
+  #admin-collection .dcr-num-input{
+    width:78px;
+    text-align:right;
+    border:none;
+    border-bottom:1px solid var(--dcr-line);
+    background:transparent;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:4px 2px;
+  }
+  #admin-collection .dcr-num-input:focus{outline:none;border-bottom:1px solid var(--dcr-gold);}
+  #admin-collection .dcr-table td.num{text-align:right;}
+  #admin-collection .dcr-table tfoot td{
+    padding-top:10px;
+    font-weight:600;
+    border-top:2px solid var(--dcr-ink);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  #admin-collection .dcr-table tfoot td.label{font-family:'IBM Plex Sans',sans-serif;}
+
+  #admin-collection .dcr-cash-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:14px;
+  }
+  #admin-collection .dcr-field label{
+    display:block;
+    font-size:12px;
+    color:var(--dcr-ink-soft);
+    margin-bottom:5px;
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  #admin-collection .dcr-field input{
+    width:100%;
+    border:1px solid var(--dcr-line);
+    border-radius:6px;
+    padding:9px 10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14.5px;
+    background:#fff;
+  }
+
+  #admin-collection .dcr-action-row{display:flex;gap:10px;margin:4px 0 16px;flex-wrap:wrap;}
+  #admin-collection .dcr-btn{
+    flex:1;
+    padding:12px 0;
+    border-radius:8px;
+    font-weight:600;
+    font-size:14.5px;
+    cursor:pointer;
+    border:1px solid var(--dcr-ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    min-width:120px;
+  }
+  #admin-collection .dcr-btn-primary{background:var(--dcr-ink);color:var(--dcr-paper-panel);}
+  #admin-collection .dcr-btn-secondary{background:transparent;color:var(--dcr-ink);}
+
+  #admin-collection .dcr-result-row{
+    display:flex;
+    justify-content:space-between;
+    padding:6px 0;
+    font-size:13.5px;
+    border-bottom:1px dotted var(--dcr-line);
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  #admin-collection .dcr-result-row.total{
+    border-top:2px solid var(--dcr-ink);
+    border-bottom:none;
+    font-weight:700;
+    margin-top:4px;
+    padding-top:9px;
+  }
+  #admin-collection .dcr-result-row .val{font-family:'IBM Plex Mono',monospace;}
+
+  #admin-collection .dcr-note{
+    border-radius:8px;
+    padding:11px 13px;
+    font-size:13px;
+    margin-top:12px;
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  #admin-collection .dcr-note.short{background:var(--dcr-danger-bg);color:var(--dcr-danger);}
+  #admin-collection .dcr-note.over{background:var(--dcr-danger-bg);color:var(--dcr-danger);}
+
+  #admin-collection .dcr-profit-box{
+    text-align:center;
+    border-radius:8px;
+    padding:14px;
+    margin-top:12px;
+  }
+  #admin-collection .dcr-profit-box.pos{background:var(--dcr-good-bg);}
+  #admin-collection .dcr-profit-box.neg{background:var(--dcr-danger-bg);}
+  #admin-collection .dcr-profit-box .lbl{font-size:12.5px;color:var(--dcr-ink-soft);margin-bottom:2px;font-family:'IBM Plex Sans',sans-serif;}
+  #admin-collection .dcr-profit-box .amt{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;}
+  #admin-collection .dcr-profit-box.pos .amt{color:var(--dcr-good);}
+  #admin-collection .dcr-profit-box.neg .amt{color:var(--dcr-danger);}
+
+  #admin-collection .dcr-explain{font-size:12px;color:var(--dcr-ink-soft);line-height:1.55;margin-top:14px;font-family:'IBM Plex Sans',sans-serif;}
+
+  #admin-collection .dcr-save-msg{font-size:12px;color:var(--dcr-good);margin-top:8px;min-height:14px;font-family:'IBM Plex Sans',sans-serif;}
+  #admin-collection .dcr-save-msg.err{color:var(--dcr-danger);}
+
+  #admin-collection .dcr-history-table{width:100%;border-collapse:collapse;font-family:'IBM Plex Sans',sans-serif;font-size:13px;}
+  #admin-collection .dcr-history-table th{text-align:left;font-size:11.5px;font-weight:500;color:var(--dcr-ink-soft);padding-bottom:6px;border-bottom:1px solid var(--dcr-line);}
+  #admin-collection .dcr-history-table th.num,#admin-collection .dcr-history-table td.num{text-align:right;}
+  #admin-collection .dcr-history-table td{padding:7px 4px;border-bottom:1px solid var(--dcr-line);}
+  #admin-collection .dcr-history-table .dcr-del-btn{background:#fff;border:1.5px solid var(--dcr-danger);color:var(--dcr-danger);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;}
+
+  /* ===== Staff Daily Collection Register — identical rules to
+     #admin-collection above, scoped to #staff-income instead, so the
+     Staff page renders with the exact same design. ===== */
+  #staff-income{
+    --dcr-paper-panel:#FBF8F1;
+    --dcr-ink:#1C2541;
+    --dcr-ink-soft:#4A5170;
+    --dcr-gold:#9C6B24;
+    --dcr-line:#DCD3BC;
+    --dcr-danger:#B3492B;
+    --dcr-danger-bg:#F6E4DC;
+    --dcr-good:#3F6B4B;
+    --dcr-good-bg:#E4EEE3;
+  }
+  #staff-income .dcr-card{
+    background:var(--dcr-paper-panel);
+    border:1px solid var(--dcr-line);
+    border-radius:10px;
+    padding:16px 16px 18px;
+    margin-bottom:16px;
+  }
+  #staff-income .dcr-card-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--dcr-gold);
+    margin:0 0 12px;
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  #staff-income .dcr-date-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  #staff-income .dcr-date-row label{font-size:12.5px;color:var(--dcr-ink-soft);font-family:'IBM Plex Sans',sans-serif;}
+  #staff-income .dcr-date-row input{
+    border:1px solid var(--dcr-line);
+    border-radius:6px;
+    padding:6px 8px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13.5px;
+    background:#fff;
+  }
+  #staff-income .dcr-table{width:100%;border-collapse:collapse;font-family:'IBM Plex Sans',sans-serif;}
+  #staff-income .dcr-table thead th{
+    text-align:left;
+    font-size:11.5px;
+    font-weight:500;
+    color:var(--dcr-ink-soft);
+    padding-bottom:6px;
+    border-bottom:1px solid var(--dcr-line);
+  }
+  #staff-income .dcr-table thead th.num{text-align:right;}
+  #staff-income .dcr-table tbody td{
+    padding:7px 0;
+    border-bottom:1px solid var(--dcr-line);
+    vertical-align:middle;
+  }
+  #staff-income .dcr-svc-name-input{
+    border:none;
+    background:transparent;
+    font-size:14px;
+    font-family:'IBM Plex Sans',sans-serif;
+    color:var(--dcr-ink);
+    width:100%;
+    padding:2px 0;
+  }
+  #staff-income .dcr-svc-name-input:focus{outline:none;border-bottom:1px dashed var(--dcr-gold);}
+  #staff-income .dcr-num-input{
+    width:78px;
+    text-align:right;
+    border:none;
+    border-bottom:1px solid var(--dcr-line);
+    background:transparent;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:4px 2px;
+  }
+  #staff-income .dcr-num-input:focus{outline:none;border-bottom:1px solid var(--dcr-gold);}
+  #staff-income .dcr-table td.num{text-align:right;}
+  #staff-income .dcr-table tfoot td{
+    padding-top:10px;
+    font-weight:600;
+    border-top:2px solid var(--dcr-ink);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  #staff-income .dcr-table tfoot td.label{font-family:'IBM Plex Sans',sans-serif;}
+
+  #staff-income .dcr-cash-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:14px;
+  }
+  #staff-income .dcr-field label{
+    display:block;
+    font-size:12px;
+    color:var(--dcr-ink-soft);
+    margin-bottom:5px;
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  #staff-income .dcr-field input{
+    width:100%;
+    border:1px solid var(--dcr-line);
+    border-radius:6px;
+    padding:9px 10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14.5px;
+    background:#fff;
+  }
+
+  #staff-income .dcr-action-row{display:flex;gap:10px;margin:4px 0 16px;flex-wrap:wrap;}
+  #staff-income .dcr-btn{
+    flex:1;
+    padding:12px 0;
+    border-radius:8px;
+    font-weight:600;
+    font-size:14.5px;
+    cursor:pointer;
+    border:1px solid var(--dcr-ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    min-width:120px;
+  }
+  #staff-income .dcr-btn-primary{background:var(--dcr-ink);color:var(--dcr-paper-panel);}
+  #staff-income .dcr-btn-secondary{background:transparent;color:var(--dcr-ink);}
+
+  #staff-income .dcr-result-row{
+    display:flex;
+    justify-content:space-between;
+    padding:6px 0;
+    font-size:13.5px;
+    border-bottom:1px dotted var(--dcr-line);
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  #staff-income .dcr-result-row.total{
+    border-top:2px solid var(--dcr-ink);
+    border-bottom:none;
+    font-weight:700;
+    margin-top:4px;
+    padding-top:9px;
+  }
+  #staff-income .dcr-result-row .val{font-family:'IBM Plex Mono',monospace;}
+
+  #staff-income .dcr-note{
+    border-radius:8px;
+    padding:11px 13px;
+    font-size:13px;
+    margin-top:12px;
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  #staff-income .dcr-note.short{background:var(--dcr-danger-bg);color:var(--dcr-danger);}
+  #staff-income .dcr-note.over{background:var(--dcr-danger-bg);color:var(--dcr-danger);}
+
+  #staff-income .dcr-profit-box{
+    text-align:center;
+    border-radius:8px;
+    padding:14px;
+    margin-top:12px;
+  }
+  #staff-income .dcr-profit-box.pos{background:var(--dcr-good-bg);}
+  #staff-income .dcr-profit-box.neg{background:var(--dcr-danger-bg);}
+  #staff-income .dcr-profit-box .lbl{font-size:12.5px;color:var(--dcr-ink-soft);margin-bottom:2px;font-family:'IBM Plex Sans',sans-serif;}
+  #staff-income .dcr-profit-box .amt{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;}
+  #staff-income .dcr-profit-box.pos .amt{color:var(--dcr-good);}
+  #staff-income .dcr-profit-box.neg .amt{color:var(--dcr-danger);}
+
+  #staff-income .dcr-explain{font-size:12px;color:var(--dcr-ink-soft);line-height:1.55;margin-top:14px;font-family:'IBM Plex Sans',sans-serif;}
+
+  #staff-income .dcr-save-msg{font-size:12px;color:var(--dcr-good);margin-top:8px;min-height:14px;font-family:'IBM Plex Sans',sans-serif;}
+  #staff-income .dcr-save-msg.err{color:var(--dcr-danger);}
+
+  #staff-income .dcr-history-table{width:100%;border-collapse:collapse;font-family:'IBM Plex Sans',sans-serif;font-size:13px;}
+  #staff-income .dcr-history-table th{text-align:left;font-size:11.5px;font-weight:500;color:var(--dcr-ink-soft);padding-bottom:6px;border-bottom:1px solid var(--dcr-line);}
+  #staff-income .dcr-history-table th.num,#staff-income .dcr-history-table td.num{text-align:right;}
+  #staff-income .dcr-history-table td{padding:7px 4px;border-bottom:1px solid var(--dcr-line);}
+  #staff-income .dcr-history-table .dcr-del-btn{background:#fff;border:1.5px solid var(--dcr-danger);color:var(--dcr-danger);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-eyebrow">Sri Net Park — Bill & Cash Manager</div>
+    <h1>Daily Cashier System</h1>
+    <div class="login-sub">Choose your login</div>
+
+    <div class="role-switch">
+      <button class="role-switch-btn active" id="tab-admin-btn">Admin</button>
+      <button class="role-switch-btn" id="tab-staff-btn">Staff</button>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="admin-login-form">
+      <div class="field">
+        <label for="admin-shop">Viewing shop</label>
+        <select id="admin-shop">
+          <option value="all">Both Shops (Combined)</option>
+          <option value="shop1">Shop 1</option>
+          <option value="shop2">Shop 2</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="admin-user">Admin username</label>
+        <input type="text" id="admin-user" placeholder="Enter admin username">
+      </div>
+      <div class="field">
+        <label for="admin-pass">Admin password</label>
+        <input type="password" id="admin-pass" placeholder="Enter admin password">
+      </div>
+      <button class="btn-primary" id="admin-login-btn">Login as Admin</button>
+      <div class="login-error" id="admin-login-error"></div>
+    </div>
+
+    <!-- STAFF -->
+    <div id="staff-login-form" style="display:none;">
+      <div class="field">
+        <label for="staff-shop">Which shop are you at</label>
+        <select id="staff-shop">
+          <option value="shop1">Shop 1</option>
+          <option value="shop2">Shop 2</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="staff-user">Staff name</label>
+        <input type="text" id="staff-user" placeholder="Enter your name">
+      </div>
+      <div class="field">
+        <label for="staff-pass">Staff password</label>
+        <input type="password" id="staff-pass" placeholder="Enter staff password">
+      </div>
+      <button class="btn-primary" id="staff-login-btn">Login as Staff</button>
+      <div class="login-error" id="staff-login-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="shell">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="brand">Sri Net Park<br><div class="brand-sub">Cashier + Bills</div></div>
+      <div class="role-tag" id="role-tag">Staff</div>
+      <div id="shop-tag" style="font-size:11px;color:#8FB3AC;margin-top:6px;"></div>
+      
+      <!-- ADMIN NAV -->
+      <div id="admin-nav" style="display:none;flex:1;">
+        <div class="field" style="margin:14px 0;">
+          <label style="color:#8FA0B5;">Viewing Shop</label>
+          <select id="admin-shop-switch" style="width:100%;padding:8px 10px;border-radius:6px;border:none;font-size:13px;">
+            <option value="all">Both Shops (Combined)</option>
+            <option value="shop1">Shop 1</option>
+            <option value="shop2">Shop 2</option>
+          </select>
+        </div>
+        <div class="nav-section-title">MAIN MENU</div>
+        <button class="nav-item active" data-page="admin-dashboard"><span class="nav-icon">⌂</span>Dashboard</button>
+        <button class="nav-item" data-page="admin-staff"><span class="nav-icon">👥</span>Staff Management</button>
+        <button class="nav-item" data-page="admin-attendance"><span class="nav-icon">✓</span>Attendance</button>
+        <button class="nav-item" data-page="admin-payroll"><span class="nav-icon">₹</span>Staff Payroll</button>
+        <button class="nav-item" data-page="admin-collection"><span class="nav-icon">▣</span>Daily Collection</button>
+        <button class="nav-item" data-page="admin-bill-format"><span class="nav-icon">▤</span>Bill Format</button>
+        <button class="nav-item" data-page="admin-product"><span class="nav-icon">◈</span>Product</button>
+        <button class="nav-item" data-page="admin-monthly"><span class="nav-icon">▦</span>Monthly Tracker</button>
+        <button class="nav-item" data-page="admin-bills"><span class="nav-icon">▧</span>My History</button>
+      </div>
+
+      <!-- STAFF NAV -->
+      <div id="staff-nav" style="flex:1;">
+        <div class="nav-section-title">STAFF MENU</div>
+        <button class="nav-item active" data-page="staff-dashboard"><span class="nav-icon">⌂</span>Dashboard</button>
+        <button class="nav-item" data-page="staff-income"><span class="nav-icon">₹</span>Daily Collection</button>
+        <button class="nav-item" data-page="staff-product"><span class="nav-icon">◈</span>Product View</button>
+        <button class="nav-item" data-page="staff-bill"><span class="nav-icon">▤</span>Bill Format</button>
+        <button class="nav-item" data-page="staff-history"><span class="nav-icon">▦</span>My History</button>
+      </div>
+
+      <button class="logout-btn" id="logout-btn">🔓 Logout</button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      
+      <!-- ADMIN: DASHBOARD -->
+      <div id="admin-dashboard" class="page active">
+        <div class="page-head">
+          <div class="eyebrow">Quick Overview</div>
+          <h2>Today's Dashboard</h2>
+        </div>
+        
+        <div class="stat-strip">
+          <div class="stat-box success">
+            <div class="label">Total Bills</div>
+            <div class="value" id="stat-bills">0</div>
+          </div>
+          <div class="stat-box success">
+            <div class="label">Bills Amount (₹)</div>
+            <div class="value" id="stat-bills-amount">₹0</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">Total Income (₹)</div>
+            <div class="value" id="stat-income">₹0</div>
+          </div>
+          <div class="stat-box alert">
+            <div class="label">Total Expense (₹)</div>
+            <div class="value" id="stat-expense">₹0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📋 Today's Bills</h3>
+          <div id="today-bills-container">
+            <p class="empty-note">No bills created today</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>👥 Staff Income Summary</h3>
+          <table id="dashboard-income-table">
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Income (₹)</th>
+                <th>Bank Collection (₹)</th>
+                <th>Service Charge (₹)</th>
+                <th>Bills</th>
+                <th>Bill Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-income-tbody">
+              <tr><td colspan="6" class="empty-note">No data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN: VIEW BILLS / MY HISTORY -->
+      <div id="admin-bills" class="page">
+        <div class="page-head">
+          <div class="eyebrow">Records</div>
+          <h2>My History</h2>
+        </div>
+
+        <div class="card">
+          <h3>Filter Bills</h3>
+          <div class="row">
+            <div class="field">
+              <label for="bills-date">Date</label>
+              <input type="date" id="bills-date">
+            </div>
+            <div class="field">
+              <label for="bills-staff">Staff</label>
+              <select id="bills-staff">
+                <option value="">All Staff</option>
+                <option value="Buvana">Buvana</option>
+                <option value="Priya">Priya</option>
+                <option value="Pandi Priya">Pandi Priya</option>
+                <option value="Vini">Vini</option>
+              </select>
+            </div>
+            <button class="btn btn-teal" id="bills-filter-btn">Apply</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📋 Bill History</h3>
+          <table id="bills-table">
+            <thead>
+              <tr>
+                <th>Shop</th>
+                <th>Memo No</th>
+                <th>Date</th>
+                <th>Staff</th>
+                <th>Customer</th>
+                <th>Amount (₹)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="bills-tbody">
+              <tr><td colspan="7" class="empty-note">No bills</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- ADMIN: MONTHLY TRACKER -->
+      <div id="admin-monthly" class="page">
+        <div class="page-head">
+          <div class="eyebrow">Financial Overview</div>
+          <h2>Monthly Income, Bills & Expenses</h2>
+        </div>
+
+        <div class="card">
+          <h3>📅 Select Month</h3>
+          <div class="row">
+            <div class="field">
+              <label for="monthly-month">Month/Year</label>
+              <input type="month" id="monthly-month">
+            </div>
+            <button class="btn btn-teal" id="monthly-load-btn">Load Data</button>
+          </div>
+        </div>
+
+        <div class="stat-strip">
+          <div class="stat-box success">
+            <div class="label">Income</div>
+            <div class="value" id="monthly-income">₹0</div>
+          </div>
+          <div class="stat-box success">
+            <div class="label">Bills Amount</div>
+            <div class="value" id="monthly-bills-amt">₹0</div>
+          </div>
+          <div class="stat-box alert">
+            <div class="label">Expense</div>
+            <div class="value" id="monthly-expense">₹0</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">Net Balance</div>
+            <div class="value" id="monthly-balance">₹0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>💰 Add Expense</h3>
+          <div class="row">
+            <div class="field">
+              <label for="exp-date">Date</label>
+              <input type="date" id="exp-date">
+            </div>
+            <div class="field">
+              <label for="exp-type">Type</label>
+              <select id="exp-type">
+                <option value="">Select Type</option>
+                <option value="Rent">Rent</option>
+                <option value="Current Bill">Current Bill (EB)</option>
+                <option value="Net Bill">Net Bill</option>
+                <option value="Paper">Paper</option>
+                <option value="Stationary">Stationary</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="exp-amount">Amount (₹)</label>
+              <input type="number" id="exp-amount" placeholder="0" step="0.01" min="0">
+            </div>
+            <button class="btn btn-green" id="exp-add-btn">+ Add</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📊 Monthly Summary</h3>
+          <table id="monthly-summary-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Amount (₹)</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody id="monthly-summary-tbody">
+              <tr><td colspan="3" class="empty-note">Select a month</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>🧾 Expense Breakdown</h3>
+          <table id="expense-breakdown-category-table">
+            <thead>
+              <tr>
+                <th>Expense Type/Category</th>
+                <th>Total Amount (₹)</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody id="expense-breakdown-category-tbody">
+              <tr><td colspan="3" class="empty-note">Select a month</td></tr>
+            </tbody>
+          </table>
+          <table id="expense-breakdown-detail-table" style="margin-top:16px;">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Expense For / Category</th>
+                <th>Amount (₹)</th>
+                <th>Shop</th>
+              </tr>
+            </thead>
+            <tbody id="expense-breakdown-detail-tbody">
+              <tr><td colspan="4" class="empty-note">Select a month</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN: STAFF MANAGEMENT -->
+      <div id="admin-staff" class="page">
+        <div class="page-head"><div class="eyebrow">Administration</div><h2>Staff Management</h2></div>
+
+        <div class="card">
+          <h3>➕ Add New Staff</h3>
+          <div class="row">
+            <div class="field">
+              <label for="staff-add-name">Staff Name</label>
+              <input type="text" id="staff-add-name" placeholder="Enter staff name">
+            </div>
+            <div class="field">
+              <label for="staff-add-salary">Daily Salary (₹)</label>
+              <input type="number" id="staff-add-salary" placeholder="300" step="1" min="0">
+            </div>
+            <button class="btn btn-teal" id="staff-add-btn">+ Add Staff</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Staff Details</h3>
+          <table><thead><tr><th>Staff Name</th><th>Status</th><th>Daily Salary (₹)</th><th>Action</th></tr></thead>
+          <tbody id="staff-mgmt-tbody">
+            <tr><td colspan="4" class="empty-note">Loading staff...</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+      <!-- ADMIN: ATTENDANCE -->
+      <div id="admin-attendance" class="page">
+        <div class="page-head"><div class="eyebrow">Staff Records (Admin Only)</div><h2>Attendance</h2></div>
+
+        <div id="att-sunday-note" class="success-msg" style="display:none;">🗓️ Today is Sunday — attendance is automatically marked as Leave for all staff.</div>
+        <div id="att-success" class="success-msg" style="display:none;">✅ Attendance saved!</div>
+
+        <div class="card">
+          <h3>📝 Mark Attendance</h3>
+          <div class="row">
+            <div class="field">
+              <label for="att-staff">Staff</label>
+              <select id="att-staff"></select>
+            </div>
+            <div class="field">
+              <label for="att-date">Date</label>
+              <input type="text" id="att-date" readonly style="background:#F5F6F8;font-weight:600;">
+            </div>
+            <div class="field">
+              <label for="att-status">Attendance</label>
+              <select id="att-status">
+                <option value="Present">Present</option>
+                <option value="Leave">Leave</option>
+              </select>
+            </div>
+            <button class="btn btn-teal" id="att-submit">💾 Submit</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📋 Today's Attendance (<span id="att-today-date"></span>)</h3>
+          <table><thead><tr><th>Staff</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody id="att-today-tbody">
+            <tr><td colspan="3" class="empty-note">No records yet</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+      <!-- ADMIN: PAYROLL -->
+      <div id="admin-payroll" class="page">
+        <div class="page-head"><div class="eyebrow">Staff Finance</div><h2>Staff Payroll</h2></div>
+
+        <div id="payroll-success" class="success-msg" style="display:none;">✅ Payroll saved!</div>
+        <div id="payroll-error" class="error-msg" style="display:none;"></div>
+
+        <div class="card">
+          <h3>📅 Select Month</h3>
+          <div class="row">
+            <div class="field">
+              <label for="payroll-month">Month/Year</label>
+              <input type="month" id="payroll-month">
+            </div>
+            <button class="btn btn-teal" id="payroll-load-btn">Load</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>💰 Salary & Payment Details</h3>
+          <table><thead><tr>
+            <th>Staff</th><th>Daily Salary (₹)</th><th>Present Days</th><th>Monthly Salary (₹)</th><th>Paid (₹)</th><th>Pending (₹)</th><th>Status</th><th>Action</th>
+          </tr></thead>
+          <tbody id="payroll-tbody">
+            <tr><td colspan="8" class="empty-note">Select a month and load</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+      <!-- ADMIN: DAILY COLLECTION (Daily Collection Register) -->
+      <div id="admin-collection" class="page">
+        <div class="page-head"><div class="eyebrow">Collection</div><h2>Daily Collection</h2></div>
+
+        <div class="dcr-card">
+          <div class="dcr-date-row">
+            <div><span class="dcr-card-title" style="margin:0;">Daily Collection Register</span></div>
+            <div>
+              <label for="dcr-date">Entry date&nbsp;</label>
+              <input type="date" id="dcr-date">
+            </div>
+          </div>
+
+          <div class="dcr-card-title">Service collections</div>
+          <table class="dcr-table">
+            <thead>
+              <tr><th>Service</th><th class="num">Bank ₹</th><th class="num">Service charge ₹</th></tr>
+            </thead>
+            <tbody id="dcr-svc-body"></tbody>
+            <tfoot>
+              <tr>
+                <td class="label">Total</td>
+                <td class="num" id="dcr-bank-total">0</td>
+                <td class="num" id="dcr-chg-total">0</td>
+              </tr>
+            </tfoot>
+          </table>
+          <div class="dcr-action-row" style="margin-top:12px;margin-bottom:0;">
+            <button type="button" class="dcr-btn dcr-btn-secondary" id="dcr-add-row">+ Add Row</button>
+          </div>
+        </div>
+
+        <div class="dcr-card">
+          <div class="dcr-card-title">Cash in hand</div>
+          <div class="dcr-cash-grid">
+            <div class="dcr-field"><label>Opening amount (cash at start of day)</label><input type="number" id="dcr-opening" value="0"></div>
+            <div class="dcr-field"><label>Closing amount (cash counted at end of day)</label><input type="number" id="dcr-closing" value="0"></div>
+            <div class="dcr-field"><label>Bank amount (paid to bank / govt portal today)</label><input type="number" id="dcr-bankpaid" value="0"></div>
+            <div class="dcr-field"><label>Expense (shop expenses paid today)</label><input type="number" id="dcr-expense" value="0"></div>
+          </div>
+        </div>
+
+        <div class="dcr-action-row">
+          <button class="dcr-btn dcr-btn-primary" id="dcr-calc">Calculate profit</button>
+          <button class="dcr-btn dcr-btn-secondary" id="dcr-save">Save entry</button>
+        </div>
+        <div class="dcr-action-row">
+          <button class="dcr-btn dcr-btn-secondary" id="dcr-print">Print entry</button>
+          <button class="dcr-btn dcr-btn-secondary" id="dcr-pdf">Download PDF</button>
+        </div>
+        <div class="dcr-action-row">
+          <button class="dcr-btn dcr-btn-secondary" id="dcr-clear">Clear</button>
+        </div>
+        <div class="dcr-save-msg" id="dcr-save-msg"></div>
+
+        <div class="dcr-card">
+          <div class="dcr-card-title">Monthly report</div>
+          <div class="dcr-date-row">
+            <div><input type="month" id="dcr-month"></div>
+            <div><button class="dcr-btn dcr-btn-secondary" id="dcr-monthly" style="flex:none;padding:8px 16px;">Download monthly report</button></div>
+          </div>
+          <div class="dcr-save-msg" id="dcr-monthly-msg"></div>
+        </div>
+
+        <div class="dcr-card" id="dcr-result-card" style="display:none;">
+          <div class="dcr-card-title">Result</div>
+          <div id="dcr-result-body"></div>
+          <div class="dcr-explain">
+            <strong>How this is worked out:</strong> each service row has two figures — the Bank amount (government/bank fee the customer pays, which you pass on) and the Service charge (what you keep for doing the work). Profit = total service charge − expense; the bank column never enters the profit, since it isn't your money.<br><br>
+            The cash section is a separate check on your till. Cash should build up as opening + everything collected from customers (bank + service charge) − what you paid out to the bank/portal − expenses. That should equal your actual closing count — if it doesn't, the note above tells you how much cash is short or over for the day.
+          </div>
+        </div>
+
+        <div class="dcr-card">
+          <div class="dcr-card-title">Daily Collection History</div>
+          <div id="dcr-history-body"><p class="dcr-save-msg" style="margin:0;">No saved entries yet.</p></div>
+        </div>
+      </div>
+
+      <!-- ADMIN: BILL FORMAT -->
+      <div id="admin-bill-format" class="page">
+        <div class="page-head">
+          <div class="eyebrow">Customer Transaction</div>
+          <h2>Create Cash Memo / Bill (Admin)</h2>
+        </div>
+
+        <div id="admin-bill-success" class="success-msg" style="display:none;">✅ Bill saved!</div>
+        <div id="admin-bill-error" class="error-msg" style="display:none;"></div>
+
+        <div class="card">
+          <div class="row">
+            <div class="field">
+              <label for="admin-bill-memo">Memo No</label>
+              <input type="text" id="admin-bill-memo" placeholder="Auto-generated" readonly>
+            </div>
+            <div class="field">
+              <label for="admin-bill-date">Date</label>
+              <input type="date" id="admin-bill-date" readonly>
+            </div>
+            <div class="field">
+              <label for="admin-bill-staff">Entered By</label>
+              <input type="text" id="admin-bill-staff" value="Admin" readonly>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="admin-bill-cust">Customer Name</label>
+              <input type="text" id="admin-bill-cust" placeholder="Customer name">
+            </div>
+            <div class="field">
+              <label for="admin-bill-mob">Mobile</label>
+              <input type="text" id="admin-bill-mob" placeholder="Mobile number">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="admin-bill-addr">Address</label>
+            <input type="text" id="admin-bill-addr" placeholder="Customer address">
+          </div>
+
+          <h3 style="margin-top:24px;margin-bottom:12px;">Bill Items</h3>
+          <div id="admin-bill-items-container">
+            <!-- Dynamic rows added here -->
+          </div>
+
+          <div class="row" style="margin-top:16px;">
+            <button class="btn btn-outline btn-small" id="admin-bill-add-row">+ Add Row</button>
+          </div>
+
+          <div style="background:#F5F6F8;border-radius:8px;padding:16px;margin-top:16px;">
+            <div class="row">
+              <div class="field">
+                <label>Total Amount (₹)</label>
+                <input type="number" id="admin-bill-total" placeholder="0" readonly style="font-weight:600;font-size:16px;color:var(--teal);">
+              </div>
+              <div class="field">
+                <label>Amount in Words</label>
+                <input type="text" id="admin-bill-words" placeholder="(Auto-fill)">
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:24px;">
+            <button class="btn btn-green" id="admin-bill-save">💾 Save Bill</button>
+            <button class="btn btn-outline" id="admin-bill-print">🖨️ Print</button>
+            <button class="btn btn-outline" id="admin-bill-clear">↻ New Bill</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN: PRODUCT -->
+      <div id="admin-product" class="page">
+        <div class="page-head"><div class="eyebrow">Products</div><h2>Product Management</h2></div>
+
+        <div id="product-success" class="success-msg" style="display:none;">✅ Product saved!</div>
+
+        <div class="card">
+          <h3 id="product-form-title">➕ Add Product</h3>
+          <input type="hidden" id="product-edit-id" value="">
+          <div class="row">
+            <div class="field">
+              <label for="product-name">Product Name</label>
+              <input type="text" id="product-name" placeholder="Product name">
+            </div>
+            <div class="field">
+              <label for="product-price">Price (₹)</label>
+              <input type="number" id="product-price" placeholder="0" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label for="product-stock">Stock Quantity</label>
+              <input type="number" id="product-stock" placeholder="0" step="1" min="0">
+            </div>
+            <div class="field">
+              <label for="product-shop">Shop</label>
+              <select id="product-shop">
+                <option value="all" selected>Combined Shop</option>
+                <option value="shop1">Shop 1</option>
+                <option value="shop2">Shop 2</option>
+              </select>
+            </div>
+            <button class="btn btn-teal" id="product-save-btn">💾 Save Product</button>
+            <button class="btn btn-outline" id="product-cancel-edit-btn" style="display:none;">Cancel Edit</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📤 Upload Product File</h3>
+          <div id="product-upload-success" class="success-msg" style="display:none;"></div>
+          <div id="product-upload-error" class="error-msg" style="display:none;"></div>
+          <div class="row">
+            <div class="field">
+              <label for="product-upload-input">Upload File (.xlsx, .xls, .csv,.pdf)</label>
+              <input type="file" id="product-upload-input" accept=".xlsx,.xls,.csv,.pdf">
+            </div>
+            <div class="field">
+              <label for="product-upload-shop">Shop (used if file has no Shop column)</label>
+              <select id="product-upload-shop">
+                <option value="all" selected>Combined Shop</option>
+                <option value="shop1">Shop 1</option>
+                <option value="shop2">Shop 2</option>
+              </select>
+            </div>
+            <button class="btn btn-teal" id="product-upload-btn">📤 Upload & Add Products</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;">File columns expected: Product Name, Price, Quantity/Stock, Shop (Shop is optional — defaults to the selection above).</div>
+        </div>
+
+        <div class="card">
+          <h3>Product List</h3>
+          <div class="row" style="margin-bottom:16px;">
+            <div class="field">
+              <label for="product-search">🔍 Search Product</label>
+              <input type="text" id="product-search" placeholder="Search by name...">
+            </div>
+          </div>
+          <table><thead><tr><th>Shop</th><th>Product Name</th><th>Price (₹)</th><th>Stock</th><th>Action</th></tr></thead>
+          <tbody id="product-tbody">
+            <tr><td colspan="5" class="empty-note">No products yet</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+      <!-- STAFF: DASHBOARD (same layout as Admin's Dashboard, scoped to
+           just this staff member's own bills and Daily Collection Register
+           entries for today.) -->
+      <div id="staff-dashboard" class="page active">
+        <div class="page-head">
+          <div class="eyebrow">Quick Overview</div>
+          <h2>Today's Dashboard</h2>
+        </div>
+
+        <div class="stat-strip">
+          <div class="stat-box success">
+            <div class="label">Total Bills</div>
+            <div class="value" id="staff-stat-bills">0</div>
+          </div>
+          <div class="stat-box success">
+            <div class="label">Bills Amount (₹)</div>
+            <div class="value" id="staff-stat-bills-amount">₹0</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">Bank Collection (₹)</div>
+            <div class="value" id="staff-stat-bank">₹0</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">Service Charge (₹)</div>
+            <div class="value" id="staff-stat-income">₹0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📋 Today's Bills</h3>
+          <div id="staff-today-bills-container">
+            <p class="empty-note">No bills created today</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAFF: PRODUCT VIEW -->
+      <div id="staff-product" class="page">
+        <div class="page-head"><div class="eyebrow">Products (View Only)</div><h2>Product View</h2></div>
+        <div class="card">
+          <h3>Available Products & Rates — <span id="staff-product-shop-label"></span></h3>
+          <table><thead><tr><th>Product Name</th><th>Price (₹)</th><th>Stock</th></tr></thead>
+          <tbody id="staff-product-tbody">
+            <tr><td colspan="3" class="empty-note">No products yet</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+      <!-- STAFF: DAILY COLLECTION (Daily Collection Register — same design,
+           fields, buttons, calculations and Firebase save target as Admin's
+           #admin-collection; only the element IDs are prefixed sdcr- so they
+           can't collide with Admin's identical IDs in the same document.) -->
+      <div id="staff-income" class="page">
+        <div class="page-head"><div class="eyebrow">Collection</div><h2>Daily Collection</h2></div>
+
+        <div class="dcr-card">
+          <div class="dcr-date-row">
+            <div><span class="dcr-card-title" style="margin:0;">Daily Collection Register</span></div>
+            <div>
+              <label for="sdcr-date">Entry date&nbsp;</label>
+              <input type="date" id="sdcr-date">
+            </div>
+          </div>
+
+          <div class="dcr-card-title">Service collections</div>
+          <table class="dcr-table">
+            <thead>
+              <tr><th>Service</th><th class="num">Bank ₹</th><th class="num">Service charge ₹</th></tr>
+            </thead>
+            <tbody id="sdcr-svc-body"></tbody>
+            <tfoot>
+              <tr>
+                <td class="label">Total</td>
+                <td class="num" id="sdcr-bank-total">0</td>
+                <td class="num" id="sdcr-chg-total">0</td>
+              </tr>
+            </tfoot>
+          </table>
+          <div class="dcr-action-row" style="margin-top:12px;margin-bottom:0;">
+            <button type="button" class="dcr-btn dcr-btn-secondary" id="sdcr-add-row">+ Add Row</button>
+          </div>
+        </div>
+
+        <div class="dcr-card">
+          <div class="dcr-card-title">Cash in hand</div>
+          <div class="dcr-cash-grid">
+            <div class="dcr-field"><label>Opening amount (cash at start of day)</label><input type="number" id="sdcr-opening" value="0"></div>
+            <div class="dcr-field"><label>Closing amount (cash counted at end of day)</label><input type="number" id="sdcr-closing" value="0"></div>
+            <div class="dcr-field"><label>Bank amount (paid to bank / govt portal today)</label><input type="number" id="sdcr-bankpaid" value="0"></div>
+            <div class="dcr-field"><label>Expense (shop expenses paid today)</label><input type="number" id="sdcr-expense" value="0"></div>
+          </div>
+        </div>
+
+        <div class="dcr-action-row">
+          <button class="dcr-btn dcr-btn-primary" id="sdcr-calc">Calculate profit</button>
+          <button class="dcr-btn dcr-btn-secondary" id="sdcr-save">Save entry</button>
+        </div>
+        <div class="dcr-action-row">
+          <button class="dcr-btn dcr-btn-secondary" id="sdcr-print">Print entry</button>
+          <button class="dcr-btn dcr-btn-secondary" id="sdcr-pdf">Download PDF</button>
+        </div>
+        <div class="dcr-action-row">
+          <button class="dcr-btn dcr-btn-secondary" id="sdcr-clear">Clear</button>
+        </div>
+        <div class="dcr-save-msg" id="sdcr-save-msg"></div>
+
+        <div class="dcr-card">
+          <div class="dcr-card-title">Monthly report</div>
+          <div class="dcr-date-row">
+            <div><input type="month" id="sdcr-month"></div>
+            <div><button class="dcr-btn dcr-btn-secondary" id="sdcr-monthly" style="flex:none;padding:8px 16px;">Download monthly report</button></div>
+          </div>
+          <div class="dcr-save-msg" id="sdcr-monthly-msg"></div>
+        </div>
+
+        <div class="dcr-card" id="sdcr-result-card" style="display:none;">
+          <div class="dcr-card-title">Result</div>
+          <div id="sdcr-result-body"></div>
+          <div class="dcr-explain">
+            <strong>How this is worked out:</strong> each service row has two figures — the Bank amount (government/bank fee the customer pays, which you pass on) and the Service charge (what you keep for doing the work). Profit = total service charge − expense; the bank column never enters the profit, since it isn't your money.<br><br>
+            The cash section is a separate check on your till. Cash should build up as opening + everything collected from customers (bank + service charge) − what you paid out to the bank/portal − expenses. That should equal your actual closing count — if it doesn't, the note above tells you how much cash is short or over for the day.
+          </div>
+        </div>
+
+        <div class="dcr-card">
+          <div class="dcr-card-title">Daily Collection History</div>
+          <div id="sdcr-history-body"><p class="dcr-save-msg" style="margin:0;">No saved entries yet.</p></div>
+        </div>
+      </div>
+
+      <!-- STAFF: CREATE BILL -->
+      <div id="staff-bill" class="page">
+        <div class="page-head">
+          <div class="eyebrow">Customer Transaction</div>
+          <h2>Create Cash Memo / Bill</h2>
+        </div>
+
+        <div id="bill-success" class="success-msg" style="display:none;">✅ Bill saved!</div>
+        <div id="bill-error" class="error-msg" style="display:none;"></div>
+
+        <div class="card">
+          <div class="row">
+            <div class="field">
+              <label for="bill-memo">Memo No</label>
+              <input type="text" id="bill-memo" placeholder="Auto-generated" readonly>
+            </div>
+            <div class="field">
+              <label for="bill-date">Date</label>
+              <input type="date" id="bill-date" readonly>
+            </div>
+            <div class="field">
+              <label for="bill-staff">Staff</label>
+              <input type="text" id="bill-staff" readonly>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="bill-cust">Customer Name</label>
+              <input type="text" id="bill-cust" placeholder="Customer name">
+            </div>
+            <div class="field">
+              <label for="bill-mob">Mobile</label>
+              <input type="text" id="bill-mob" placeholder="Mobile number">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="bill-addr">Address</label>
+            <input type="text" id="bill-addr" placeholder="Customer address">
+          </div>
+
+          <h3 style="margin-top:24px;margin-bottom:12px;">Bill Items</h3>
+          <div id="bill-items-container">
+            <!-- Dynamic rows added here -->
+          </div>
+
+          <div class="row" style="margin-top:16px;">
+            <button class="btn btn-outline btn-small" id="bill-add-row">+ Add Row</button>
+          </div>
+
+          <div style="background:#F5F6F8;border-radius:8px;padding:16px;margin-top:16px;">
+            <div class="row">
+              <div class="field">
+                <label>Total Amount (₹)</label>
+                <input type="number" id="bill-total" placeholder="0" readonly style="font-weight:600;font-size:16px;color:var(--teal);">
+              </div>
+              <div class="field">
+                <label>Amount in Words</label>
+                <input type="text" id="bill-words" placeholder="(Auto-fill)">
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:24px;">
+            <button class="btn btn-green" id="bill-save">💾 Save Bill</button>
+            <button class="btn btn-outline" id="bill-print">🖨️ Print</button>
+            <button class="btn btn-outline" id="bill-clear">↻ New Bill</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAFF: HISTORY -->
+      <div id="staff-history" class="page">
+        <div class="page-head">
+          <div class="eyebrow">Your Records</div>
+          <h2>Bills History</h2>
+        </div>
+
+        <div class="card">
+          <h3>📋 Bills Created</h3>
+          <table id="history-bills-table">
+            <thead>
+              <tr>
+                <th>Memo No</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="history-bills-tbody">
+              <tr><td colspan="4" class="empty-note">No bills</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- BILL PREVIEW MODAL -->
+<div id="bill-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeBillModal()">&times;</span>
+    <div id="bill-preview"></div>
+    <div class="row" style="margin-top:20px;">
+      <button class="btn btn-teal" onclick="printBill()">🖨️ Print</button>
+      <button class="btn btn-outline" onclick="closeBillModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ CONFIG ============
+const ADMIN_USER = 'RKP2892';
+const ADMIN_PASS = 'Snp@2892';
+let STAFF_LIST = ['Buvana', 'Priya', 'Pandi Priya', 'Vini']; // kept live-updated from the "staff" collection (Active staff only)
+const STAFF_PASS = 'staff123';
+const DEFAULT_DAILY_SALARY = 300;
+
+// Friendly display names for each shop. Rename these to the real
+// shop names/locations whenever you like — nothing else needs to change.
+const SHOP_NAMES = {
+  shop1: 'Shop 1',
+  shop2: 'Shop 2',
+  all: 'Combined Shop'
+};
+
+// ============ FIREBASE (CLOUD DATABASE) ============
+// 1. Create a free project at https://console.firebase.google.com
+// 2. Build -> Firestore Database -> Create database (start in test mode)
+// 3. Project settings -> General -> Your apps -> Add app (Web) -> copy the config below
+// 4. Paste your real values in place of the placeholders here.
+const firebaseConfig = {
+  apiKey: "AIzaSyAv9eGUF7r09PKcNeou1HoPulw689L-iRw",
+  authDomain: "snp-browsing.firebaseapp.com",
+  projectId: "snp-browsing",
+  storageBucket: "snp-browsing.firebasestorage.app",
+  messagingSenderId: "639215440002",
+  appId: "1:639215440002:web:0df7020fe35919f946649b"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let currentUser = null;
+let currentRole = null;
+let currentShop = null; // 'shop1', 'shop2', or 'all' (admin only)
+let allEntries = [];
+let allBills = [];
+let allExpenses = [];
+let allDailyRegister = []; // Daily Collection Register entries (new format, separate collection)
+
+// Global (not shop-scoped) data: staff, attendance, payroll, products.
+let allStaff = [];
+let allAttendance = [];
+let allPayroll = [];
+let allProducts = [];
+
+let unsubEntries = [];
+let unsubBills = [];
+let unsubExpenses = [];
+let unsubDailyRegister = [];
+
+function shopsToWatch(shop){
+  return shop === 'all' ? ['shop1', 'shop2'] : [shop];
+}
+
+// Generic helper: keep `targetArray` live-synced with Firestore for one
+// or more shops, re-rendering the screen every time anything changes
+// (on this device or any other device/staff member).
+function watchCollection(name, shop, targetArrayRef, onChange){
+  const unsubs = [];
+  const buckets = {}; // shop -> array of docs for that shop
+
+  shopsToWatch(shop).forEach(s => {
+    buckets[s] = [];
+    const unsub = db.collection(name).where('shop', '==', s)
+      .onSnapshot(snap => {
+        buckets[s] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        targetArrayRef.list = [].concat(...Object.values(buckets));
+        onChange();
+      }, err => {
+        console.error(name, 'sync error:', err);
+      });
+    unsubs.push(unsub);
+  });
+  return unsubs;
+}
+
+function stopWatching(unsubs){
+  unsubs.forEach(fn => fn && fn());
+  return [];
+}
+
+function subscribeShopData(shop){
+  unsubEntries = stopWatching(unsubEntries);
+  unsubBills = stopWatching(unsubBills);
+  unsubExpenses = stopWatching(unsubExpenses);
+  unsubDailyRegister = stopWatching(unsubDailyRegister);
+
+  const entriesRef = { list: [] };
+  const billsRef = { list: [] };
+  const expensesRef = { list: [] };
+  const dailyRegisterRef = { list: [] };
+
+  unsubEntries = watchCollection('entries', shop, entriesRef, () => {
+    allEntries = entriesRef.list;
+    onDataUpdated();
+  });
+  unsubBills = watchCollection('bills', shop, billsRef, () => {
+    allBills = billsRef.list;
+    onDataUpdated();
+  });
+  unsubExpenses = watchCollection('expenses', shop, expensesRef, () => {
+    allExpenses = expensesRef.list;
+    onDataUpdated();
+  });
+  // Daily Collection Register — a separate collection from 'entries' on
+  // purpose, since its record shape (per-service Bank/Charge rows + cash
+  // reconciliation) doesn't match the old entries schema used by Staff
+  // Daily Collection, My History and Export Reports.
+  unsubDailyRegister = watchCollection('dailyRegister', shop, dailyRegisterRef, () => {
+    allDailyRegister = dailyRegisterRef.list;
+    onDataUpdated();
+  });
+}
+
+// Re-render whichever screen is currently visible whenever fresh data
+// arrives from Firestore (from this device or any other one).
+function onDataUpdated(){
+  if(!currentRole) return;
+  if(currentRole === 'admin'){
+    const activePage = document.querySelector('.page.active');
+    if(!activePage) return;
+    if(activePage.id === 'admin-dashboard') renderAdminDashboard();
+    if(activePage.id === 'admin-bills'){ renderBillsTable(); }
+    if(activePage.id === 'admin-collection') renderDcrHistory();
+    if(activePage.id === 'admin-monthly'){
+      const month = document.getElementById('monthly-month').value;
+      if(month) renderMonthlyTracker(month);
+    }
+  } else {
+    const activePage = document.querySelector('.page.active');
+    if(activePage && activePage.id === 'staff-dashboard') renderStaffDashboardPage();
+    if(activePage && activePage.id === 'staff-history') renderStaffHistory();
+    if(activePage && activePage.id === 'staff-income') renderSdcrHistory();
+  }
+}
+
+// ============ STORAGE (writes go straight to the cloud) ============
+function addEntry(entry){ return db.collection('entries').add(entry); }
+function addBill(bill){ return db.collection('bills').add(bill); }
+function addExpense(expense){ return db.collection('expenses').add(expense); }
+function updateEntry(id, entry){ return db.collection('entries').doc(id).set(entry); }
+// Admin-only: delete a Daily Collection entry (e.g. an accidental duplicate from a double Save click).
+function deleteEntry(id){ return db.collection('entries').doc(id).delete(); }
+
+// Daily Collection Register — Admin and Staff can both save entries for the
+// same shop and same day (they serve different customers), so each Save
+// creates its own new document with an auto-generated ID. Editing an
+// existing record updates that specific document only.
+function addDailyRegisterEntry(entry){ return db.collection('dailyRegister').add(entry); }
+function setDailyRegisterEntry(docId, entry){ return db.collection('dailyRegister').doc(docId).set(entry); }
+function deleteDailyRegisterEntry(docId){ return db.collection('dailyRegister').doc(docId).delete(); }
+
+// ============ GLOBAL DATA (staff / attendance / payroll / products) ============
+// These are not shop-scoped like entries/bills/expenses — Admin manages all of
+// them from one place, so we sync them once, independent of the shop switcher.
+
+function seedDefaultStaffIfEmpty(){
+  db.collection('staff').get().then(snap => {
+    if(!snap.empty) return;
+    const defaults = ['Buvana', 'Priya', 'Pandi Priya', 'Vini'];
+    defaults.forEach(name => {
+      db.collection('staff').add({ name, status: 'Active', dailySalary: DEFAULT_DAILY_SALARY });
+    });
+  }).catch(err => console.error('staff seed check failed:', err));
+}
+
+function startGlobalListeners(){
+  seedDefaultStaffIfEmpty();
+
+  db.collection('staff').onSnapshot(snap => {
+    allStaff = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Keep login's STAFF_LIST in sync with Active staff only.
+    const activeNames = allStaff.filter(s => s.status === 'Active').map(s => s.name);
+    if(activeNames.length > 0) STAFF_LIST = activeNames;
+    if(currentRole === 'admin'){
+      renderStaffManagement();
+      populateAttendanceStaffDropdown();
+      renderPayroll();
+    }
+  }, err => console.error('staff sync error:', err));
+
+  db.collection('attendance').onSnapshot(snap => {
+    allAttendance = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentRole === 'admin'){
+      renderTodayAttendance();
+      renderPayroll();
+    }
+  }, err => console.error('attendance sync error:', err));
+
+  db.collection('payroll').onSnapshot(snap => {
+    allPayroll = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentRole === 'admin') renderPayroll();
+  }, err => console.error('payroll sync error:', err));
+
+  db.collection('products').onSnapshot(snap => {
+    allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentRole === 'admin') renderProductTable();
+    if(currentRole === 'staff') renderStaffProductView();
+  }, err => console.error('products sync error:', err));
+}
+
+// ============ LOGIN ============
+document.getElementById('tab-admin-btn').addEventListener('click', function(){
+  this.classList.add('active');
+  document.getElementById('tab-staff-btn').classList.remove('active');
+  document.getElementById('admin-login-form').style.display='block';
+  document.getElementById('staff-login-form').style.display='none';
+});
+
+document.getElementById('tab-staff-btn').addEventListener('click', function(){
+  this.classList.add('active');
+  document.getElementById('tab-admin-btn').classList.remove('active');
+  document.getElementById('admin-login-form').style.display='none';
+  document.getElementById('staff-login-form').style.display='block';
+});
+
+document.getElementById('admin-login-btn').addEventListener('click', function(){
+  const user = document.getElementById('admin-user').value;
+  const pass = document.getElementById('admin-pass').value;
+  const shop = document.getElementById('admin-shop').value;
+  const err = document.getElementById('admin-login-error');
+  err.textContent = '';
+  
+  if(!user || !pass){ err.textContent = 'Enter credentials'; return; }
+  if(user === ADMIN_USER && pass === ADMIN_PASS){
+    loginUser('Admin', 'admin', shop);
+  } else {
+    err.textContent = 'Invalid credentials';
+  }
+});
+
+document.getElementById('staff-login-btn').addEventListener('click', function(){
+  const user = document.getElementById('staff-user').value;
+  const pass = document.getElementById('staff-pass').value;
+  const shop = document.getElementById('staff-shop').value;
+  const err = document.getElementById('staff-login-error');
+  err.textContent = '';
+  
+  if(!user || !pass){ err.textContent = 'Enter credentials'; return; }
+  if(STAFF_LIST.includes(user) && pass === STAFF_PASS){
+    loginUser(user, 'staff', shop);
+  } else {
+    err.textContent = 'Invalid name or password';
+  }
+});
+
+function loginUser(name, role, shop){
+  currentUser = name;
+  currentRole = role;
+  currentShop = shop;
+  subscribeShopData(shop);
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('role-tag').textContent = role.charAt(0).toUpperCase() + role.slice(1);
+  document.getElementById('shop-tag').textContent = shop === 'all' ? 'Both Shops' : SHOP_NAMES[shop];
+
+  if(role === 'admin'){
+    document.getElementById('admin-nav').style.display = 'block';
+    document.getElementById('staff-nav').style.display = 'none';
+    document.getElementById('admin-shop-switch').value = shop;
+    showPage('admin-dashboard');
+    renderAdminDashboard();
+  } else {
+    document.getElementById('admin-nav').style.display = 'none';
+    document.getElementById('staff-nav').style.display = 'block';
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('bill-date').value = today;
+    document.getElementById('bill-staff').value = name;
+    document.getElementById('exp-date').value = today;
+    generateBillNo();
+    initBillForm();
+    initSdcrPage();
+    showPage('staff-dashboard');
+    renderStaffDashboardPage();
+    renderStaffProductView();
+  }
+}
+
+document.getElementById('admin-shop-switch').addEventListener('change', function(){
+  currentShop = this.value;
+  document.getElementById('shop-tag').textContent = currentShop === 'all' ? 'Both Shops' : SHOP_NAMES[currentShop];
+  subscribeShopData(currentShop);
+  // If the Daily Collection Register is the page currently open, reload
+  // its form/history for the newly selected shop.
+  const activePage = document.querySelector('.page.active');
+  if(activePage && activePage.id === 'admin-collection') initDcrPage();
+});
+
+document.getElementById('logout-btn').addEventListener('click', function(){
+  unsubEntries = stopWatching(unsubEntries);
+  unsubBills = stopWatching(unsubBills);
+  unsubExpenses = stopWatching(unsubExpenses);
+  unsubDailyRegister = stopWatching(unsubDailyRegister);
+  allEntries = []; allBills = []; allExpenses = []; allDailyRegister = [];
+  currentUser = null;
+  currentRole = null;
+  currentShop = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+});
+
+// ============ NAVIGATION ============
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', function(){
+    const page = this.dataset.page;
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    showPage(page);
+    
+    if(page === 'admin-dashboard') renderAdminDashboard();
+    if(page === 'admin-collection') initDcrPage();
+    if(page === 'admin-bills') {
+      // Requirement: don't force the date filter to today on every visit —
+      // that hid older bills by default even though they were always saved
+      // permanently. Leave whatever date filter (or none) was last set.
+      renderBillsTable();
+    }
+    if(page === 'admin-monthly') {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('monthly-month').value = today.substring(0, 7);
+      document.getElementById('exp-date').value = today;
+      renderMonthlyTracker(today.substring(0, 7));
+    }
+    if(page === 'admin-export') {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('export-month').value = today.substring(0, 7);
+    }
+    if(page === 'admin-staff') renderStaffManagement();
+    if(page === 'admin-attendance') {
+      populateAttendanceStaffDropdown();
+      renderTodayAttendance();
+    }
+    if(page === 'admin-payroll') renderPayroll();
+    if(page === 'admin-product') renderProductTable();
+    if(page === 'staff-dashboard') renderStaffDashboardPage();
+    if(page === 'staff-product') renderStaffProductView();
+    if(page === 'staff-history') renderStaffHistory();
+    if(page === 'staff-income') initSdcrPage();
+  });
+});
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+}
+
+// ============ ADMIN DASHBOARD ============
+function renderAdminDashboard(){
+  const today = new Date().toISOString().split('T')[0];
+  const todayEntries = allEntries.filter(e => e.date === today);
+  const todayBills = allBills.filter(b => b.date === today);
+  const todayExpenses = allExpenses.filter(e => e.date === today);
+  // Daily Collection Register: only the service-charge portion counts as
+  // income here (the Bank ₹ column is a pass-through, not shop earnings).
+  const todayRegister = allDailyRegister.filter(r => r.date === today);
+
+  const incomeTotal = todayEntries.reduce((sum, e) => sum + e.total, 0)
+    + todayRegister.reduce((sum, r) => sum + (Number(r.chgTotal) || 0), 0);
+  const billsTotal = todayBills.reduce((sum, b) => sum + b.amount, 0);
+  const expenseTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  document.getElementById('stat-bills').textContent = todayBills.length;
+  document.getElementById('stat-bills-amount').textContent = '₹' + billsTotal.toFixed(2);
+  document.getElementById('stat-income').textContent = '₹' + incomeTotal.toFixed(2);
+  document.getElementById('stat-expense').textContent = '₹' + expenseTotal.toFixed(2);
+
+  // Bills list
+  const billsHtml = todayBills.length === 0 
+    ? '<p class="empty-note">No bills created today</p>'
+    : todayBills.map(b => `
+      <div class="bill-card">
+        <div class="info">
+          <div class="info-main">${b.memoNo} — ${b.customer}</div>
+          <div style="color:#999;font-size:11px;">${b.staff}${currentShop === 'all' ? ' · ' + (SHOP_NAMES[b.shop] || b.shop) : ''}</div>
+        </div>
+        <div class="amount">₹${b.amount.toFixed(2)}</div>
+        <div class="bill-actions">
+          <button class="btn btn-outline btn-small" onclick="viewBillDetails('${b.id}')">View</button>
+        </div>
+      </div>
+    `).join('');
+  document.getElementById('today-bills-container').innerHTML = billsHtml;
+
+  // Staff summary — each staff member's own bills, entries and Daily
+  // Collection Register (Bank ₹ / Service charge ₹) rolled up by who
+  // actually entered it, not lumped together under "Admin".
+  const byStaff = {};
+  function staffRow(name){
+    if(!byStaff[name]) byStaff[name] = { income: 0, bank: 0, charge: 0, bills: 0, billAmt: 0 };
+    return byStaff[name];
+  }
+  todayEntries.forEach(e => {
+    staffRow(e.staff).income += e.total;
+  });
+  todayRegister.forEach(r => {
+    const staffKey = r.staff || (r.role === 'admin' ? 'Admin' : 'Unknown');
+    const row = staffRow(staffKey);
+    row.charge += (Number(r.chgTotal) || 0);
+    row.bank += (Number(r.bankTotal) || 0);
+    row.income += (Number(r.chgTotal) || 0);
+  });
+  todayBills.forEach(b => {
+    const row = staffRow(b.staff);
+    row.bills++;
+    row.billAmt += b.amount;
+  });
+
+  const tbody = document.getElementById('dashboard-income-tbody');
+  if(Object.keys(byStaff).length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-note">No data</td></tr>';
+  } else {
+    tbody.innerHTML = Object.keys(byStaff).sort().map(staff => `
+      <tr>
+        <td><strong>${staff}</strong></td>
+        <td>₹${byStaff[staff].income.toFixed(2)}</td>
+        <td>₹${byStaff[staff].bank.toFixed(2)}</td>
+        <td>₹${byStaff[staff].charge.toFixed(2)}</td>
+        <td>${byStaff[staff].bills}</td>
+        <td>₹${byStaff[staff].billAmt.toFixed(2)}</td>
+      </tr>
+    `).join('');
+  }
+}
+
+// ============ STAFF DASHBOARD (mirrors Admin's Dashboard, scoped to the
+// logged-in staff member's own bills and Daily Collection Register
+// entries for today) ============
+function renderStaffDashboardPage(){
+  if(!currentUser) return;
+  const today = new Date().toISOString().split('T')[0];
+  const myBillsToday = allBills.filter(b => b.staff === currentUser && b.date === today);
+  const myRegisterToday = allDailyRegister.filter(r => r.staff === currentUser && r.date === today);
+
+  const billsTotal = myBillsToday.reduce((sum, b) => sum + b.amount, 0);
+  const chargeTotal = myRegisterToday.reduce((sum, r) => sum + (Number(r.chgTotal) || 0), 0);
+  const bankTotal = myRegisterToday.reduce((sum, r) => sum + (Number(r.bankTotal) || 0), 0);
+
+  document.getElementById('staff-stat-bills').textContent = myBillsToday.length;
+  document.getElementById('staff-stat-bills-amount').textContent = '₹' + billsTotal.toFixed(2);
+  document.getElementById('staff-stat-bank').textContent = '₹' + bankTotal.toFixed(2);
+  document.getElementById('staff-stat-income').textContent = '₹' + chargeTotal.toFixed(2);
+
+  const billsHtml = myBillsToday.length === 0
+    ? '<p class="empty-note">No bills created today</p>'
+    : myBillsToday.map(b => `
+      <div class="bill-card">
+        <div class="info">
+          <div class="info-main">${b.memoNo} — ${b.customer}</div>
+        </div>
+        <div class="amount">₹${b.amount.toFixed(2)}</div>
+        <div class="bill-actions">
+          <button class="btn btn-outline btn-small" onclick="viewBillDetails('${b.id}')">View</button>
+        </div>
+      </div>
+    `).join('');
+  document.getElementById('staff-today-bills-container').innerHTML = billsHtml;
+}
+
+// ============ ADMIN BILLS ============
+document.getElementById('bills-filter-btn').addEventListener('click', renderBillsTable);
+
+function renderBillsTable(){
+  const date = document.getElementById('bills-date').value;
+  const staff = document.getElementById('bills-staff').value;
+  
+  let filtered = allBills;
+  if(date) filtered = filtered.filter(b => b.date === date);
+  if(staff) filtered = filtered.filter(b => b.staff === staff);
+
+  const tbody = document.getElementById('bills-tbody');
+  if(filtered.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-note">No bills</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(b => `
+    <tr>
+      <td>${SHOP_NAMES[b.shop] || b.shop || '—'}</td>
+      <td><strong>${b.memoNo}</strong></td>
+      <td>${b.date}</td>
+      <td>${b.staff}</td>
+      <td>${b.customer}</td>
+      <td>₹${b.amount.toFixed(2)}</td>
+      <td><button class="btn btn-outline btn-small" onclick="viewBillDetails('${b.id}')">View</button></td>
+    </tr>
+  `).join('');
+}
+
+function buildBillPreviewHtml(bill){
+    return `
+    <div style="
+        width:100%;
+        box-sizing:border-box;
+        border:2px solid #173b6c;
+        padding:18px;
+        position:relative;
+        background:#fff;
+        font-family:'Times New Roman', Times, serif;
+        color:#222;
+    ">
+
+        <!-- HEADER -->
+        <div style="
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:12px;
+            border-bottom:1px solid #173b6c;
+            padding-bottom:12px;
+            margin-bottom:12px;
+        ">
+
+            <div style="
+                width:55px;
+                height:55px;
+                border:1px solid #173b6c;
+                border-radius:8px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                overflow:hidden;
+            ">
+                <img
+                    src="images/logo.png.jpeg"
+                    alt="SNP Computer Logo"
+                    style="width:70px;height:70px;object-fit:contain;margin-bottom:5px;"
+                >
+            </div>
+
+            <div style="text-align:center;">
+                <div style="
+                    font-size:12px;
+                    font-weight:bold;
+                    color:#555;
+                    margin-bottom:3px;
+                ">
+                    Cash Memo
+                </div>
+
+<div style="
+    position:absolute;
+    right:18px;
+    top:18px;
+    font-size:12px;
+    font-weight:bold;
+    color:#555;
+">
+    Mobile: 9942479259
+</div>
+
+                <h2 style="
+                    margin:0;
+                    color:#173b6c;
+                    font-size:24px;
+                ">
+                    ஸ்ரீ நெட்பார்க்-
+                    SNP COMPUTER
+                </h2>
+
+                <div style="
+                    font-size:12px;
+                    margin-top:4px;
+                    font-weight:600;
+                ">
+                    இணைய சேவை, இனிய சேவை!
+                </div>
+
+                <div style="
+                    font-size:11px;
+                    color:#555;
+                    margin-top:3px;
+                ">
+                </div>
+            </div>
+        </div>
+
+        <!-- SHOP DETAILS -->
+        <div style="
+            font-size:11px;
+            text-align:center;
+            margin-bottom:14px;
+            line-height:1.5;
+        ">
+           தமிழ்நாடு கிராம வங்கி அருகில், காரியாபட்டி
+          
+        </div>
+
+        <!-- MEMO DETAILS -->
+        <table style="
+            width:100%;
+            border-collapse:collapse;
+            margin-bottom:14px;
+            font-size:12px;
+        ">
+            <tr>
+                <td style="padding:5px 0;">
+                    <strong>Memo No:</strong> ${bill.memoNo || ''}
+                </td>
+
+                <td style="
+                    padding:5px 0;
+                    text-align:right;
+                ">
+                    <strong>Date:</strong> ${bill.date || ''}
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding:5px 0;">
+                    <strong>Customer:</strong> ${bill.customer || ''}
+                </td>
+
+                <td style="
+                    padding:5px 0;
+                    text-align:right;
+                ">
+                    <strong>Staff:</strong> ${bill.staff || 'Admin'}
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding:5px 0;">
+                    <strong>Mobile:</strong> ${bill.mobile || ''}
+                </td>
+
+                <td style="
+                    padding:5px 0;
+                    text-align:right;
+                ">
+                    <strong>Shop:</strong> ${bill.shop || ''}
+                </td>
+            </tr>
+        </table>
+
+        <!-- ITEMS TABLE -->
+        <table style="
+            width:100%;
+            border-collapse:collapse;
+            font-size:12px;
+        ">
+
+            <tr style="background:#e8eef7;">
+                <th style="
+                    border:1px solid #173b6c;
+                    padding:7px;
+                    width:8%;
+                    text-align:center;
+                ">
+                    S.No
+                </th>
+
+                <th style="
+                    border:1px solid #173b6c;
+                    padding:7px;
+                    text-align:left;
+                ">
+                    Description
+                </th>
+
+                <th style="
+                    border:1px solid #173b6c;
+                    padding:7px;
+                    width:18%;
+                    text-align:right;
+                ">
+                    Rate
+                </th>
+
+                <th style="
+                    border:1px solid #173b6c;
+                    padding:7px;
+                    width:20%;
+                    text-align:right;
+                ">
+                    Amount
+                </th>
+            </tr>
+
+            ${
+                (bill.items || []).map((item, index) => `
+                    <tr>
+                        <td style="
+                            border:1px solid #aaa;
+                            padding:7px;
+                            text-align:center;
+                        ">
+                            ${index + 1}
+                        </td>
+
+                        <td style="
+                            border:1px solid #aaa;
+                            padding:7px;
+                        ">
+                            ${item.desc || ''}
+                        </td>
+
+                        <td style="
+                            border:1px solid #aaa;
+                            padding:7px;
+                            text-align:right;
+                        ">
+                            ₹${Number(item.rate || 0).toFixed(2)}
+                        </td>
+
+                        <td style="
+                            border:1px solid #aaa;
+                            padding:7px;
+                            text-align:right;
+                        ">
+                            ₹${Number(item.rate || 0).toFixed(2)}
+                        </td>
+                    </tr>
+                `).join('')
+            }
+
+            <!-- TOTAL -->
+            <tr>
+                <td
+                    colspan="3"
+                    style="
+                        border:1px solid #173b6c;
+                        padding:8px;
+                        text-align:right;
+                        font-weight:bold;
+                    "
+                >
+                    TOTAL
+                </td>
+
+                <td style="
+                    border:1px solid #173b6c;
+                    padding:8px;
+                    text-align:right;
+                    font-weight:bold;
+                ">
+                    ₹${Number(bill.amount || 0).toFixed(2)}
+                </td>
+            </tr>
+
+        </table>
+
+        <!-- AMOUNT IN WORDS -->
+        <div style="
+            border:1px solid #aaa;
+            padding:9px;
+            margin-top:12px;
+            font-size:12px;
+        ">
+            <strong>Amount in Words:</strong>
+            ${bill.words || ''}
+        </div>
+
+        <!-- TERMS -->
+        <div style="
+            margin-top:18px;
+            font-size:11px;
+            line-height:1.6;
+        ">
+            <strong>NOTES:</strong>
+            <br>
+             * உங்கள் வரவு நல்வரவாகட்டும்! மீண்டும் வருக!<br>
+             * எங்கள் சேவையைத் தேர்ந்தெடுத்தமைக்கு மிக்க நன்றி!<br>
+             * உங்கள் ஆதரவே எங்கள் வளர்ச்சி! மகிழ்ச்சியான நாளாக அமையட்டும்!
+ 
+            <br>
+        </div>
+
+        <!-- SIGNATURE -->
+        <div style="
+            text-align:right;
+            margin-top:18px;
+            font-size:12px;
+        ">
+            <div style="margin-bottom:25px;">
+                Signature
+            </div>
+            <strong>SNP Computer</strong>
+        </div>
+
+        <!-- THANK YOU -->
+        <div style="
+            text-align:center;
+            margin-top:20px;
+            padding-top:10px;
+            border-top:1px solid #173b6c;
+            color:#173b6c;
+            font-weight:bold;
+            font-size:14px;
+        ">
+            ஸ்ரீ நெட் பார்க் 💻
+உங்கள் நம்பிக்கையே எங்கள் அடையாளம்.
+எங்களை தேர்வு செய்ததற்கு நன்றி! 🙏✨
+        </div>
+
+    </div>
+    `;
+}
+
+function viewBillDetails(id){
+  const bill = allBills.find(b => b.id === id);
+  if(!bill){ alert('Bill not found'); return; }
+  document.getElementById('bill-preview').innerHTML = buildBillPreviewHtml(bill);
+  document.getElementById('bill-modal').classList.add('active');
+}
+
+function closeBillModal(){
+  document.getElementById('bill-modal').classList.remove('active');
+}
+
+function printBill(){
+  const preview = document.getElementById('bill-preview').innerHTML;
+  const win = window.open('', '', 'width=900,height=600');
+  win.document.write(preview);
+  win.document.close();
+  win.print();
+}
+
+// ============ MONTHLY TRACKER ============
+document.getElementById('monthly-load-btn').addEventListener('click', function(){
+  const month = document.getElementById('monthly-month').value;
+  if(!month){ alert('Select a month'); return; }
+  renderMonthlyTracker(month);
+});
+
+document.getElementById('exp-add-btn').addEventListener('click', function(){
+  const date = document.getElementById('exp-date').value;
+  const type = document.getElementById('exp-type').value;
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+
+  if(!date || !type || !amount || amount <= 0){
+    alert('Fill all fields');
+    return;
+  }
+  if(currentShop === 'all'){
+    alert('Switch to a single shop before adding an expense, so it gets tagged correctly.');
+    return;
+  }
+
+  addExpense({ date, type, amount, shop: currentShop });
+
+  document.getElementById('exp-type').value = '';
+  document.getElementById('exp-amount').value = '';
+});
+
+function renderMonthlyTracker(month){
+  const entries = allEntries.filter(e => e.date.startsWith(month));
+  const bills = allBills.filter(b => b.date.startsWith(month));
+  const expenses = allExpenses.filter(e => e.date.startsWith(month));
+
+  const incomeTotal = entries.reduce((sum, e) => sum + e.total, 0);
+  const billsTotal = bills.reduce((sum, b) => sum + b.amount, 0);
+  const expenseTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const balance = incomeTotal + billsTotal - expenseTotal;
+
+  document.getElementById('monthly-income').textContent = '₹' + incomeTotal.toFixed(2);
+  document.getElementById('monthly-bills-amt').textContent = '₹' + billsTotal.toFixed(2);
+  document.getElementById('monthly-expense').textContent = '₹' + expenseTotal.toFixed(2);
+  document.getElementById('monthly-balance').textContent = '₹' + balance.toFixed(2);
+
+  // Summary table
+  const summaryData = [
+    { cat: 'Income (Services)', amt: incomeTotal, cnt: entries.length },
+    { cat: 'Bills (Customers)', amt: billsTotal, cnt: bills.length },
+    { cat: 'Expenses', amt: expenseTotal, cnt: expenses.length }
+  ];
+
+  const tbody = document.getElementById('monthly-summary-tbody');
+  tbody.innerHTML = summaryData.map(row => `
+    <tr>
+      <td><strong>${row.cat}</strong></td>
+      <td>₹${row.amt.toFixed(2)}</td>
+      <td>${row.cnt}</td>
+    </tr>
+  `).join('');
+
+  // Detailed Expense Breakdown (below Monthly Summary) — grouped by category, plus a full line-item list.
+  const categoryTbody = document.getElementById('expense-breakdown-category-tbody');
+  const detailTbody = document.getElementById('expense-breakdown-detail-tbody');
+  if(categoryTbody && detailTbody){
+    if(expenses.length === 0){
+      categoryTbody.innerHTML = '<tr><td colspan="3" class="empty-note">No expenses for this month</td></tr>';
+      detailTbody.innerHTML = '<tr><td colspan="4" class="empty-note">No expenses for this month</td></tr>';
+    }else{
+      const byCategory = {};
+      expenses.forEach(e => {
+        const cat = e.type || 'Others';
+        if(!byCategory[cat]) byCategory[cat] = { amt: 0, cnt: 0 };
+        byCategory[cat].amt += Number(e.amount) || 0;
+        byCategory[cat].cnt += 1;
+      });
+      categoryTbody.innerHTML = Object.keys(byCategory).sort().map(cat => `
+        <tr>
+          <td><strong>${cat}</strong></td>
+          <td>₹${byCategory[cat].amt.toFixed(2)}</td>
+          <td>${byCategory[cat].cnt}</td>
+        </tr>
+      `).join('');
+
+      const sortedExpenses = [...expenses].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+      detailTbody.innerHTML = sortedExpenses.map(e => `
+        <tr>
+          <td>${e.date || '—'}</td>
+          <td>${e.type || 'Others'}</td>
+          <td>₹${Number(e.amount || 0).toFixed(2)}</td>
+          <td>${SHOP_NAMES[e.shop] || e.shop || '—'}</td>
+        </tr>
+      `).join('');
+    }
+  }
+}
+
+// ============ BILL FORM ============
+function generateBillNo(){
+  const date = new Date();
+  const dateStr = date.getFullYear().toString().slice(-2) + 
+                  String(date.getMonth() + 1).padStart(2, '0') + 
+                  String(date.getDate()).padStart(2, '0');
+  const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+  document.getElementById('bill-memo').value = 'SNP-' + dateStr + '-' + random;
+}
+
+function initBillForm(){
+  const container = document.getElementById('bill-items-container');
+  container.innerHTML = '';
+  for(let i = 0; i < 5; i++){
+    addBillRow(i);
+  }
+}
+
+function addBillRow(idx){
+  const container = document.getElementById('bill-items-container');
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.innerHTML = `
+    <input type="text" class="bill-desc" placeholder="Item description" value="${['Xerox', 'E-Sevai', 'Pan Card', 'Application', 'Lamination'][idx] || ''}">
+    <input type="number" class="bill-rate" placeholder="Amount (₹)" step="0.01" min="0" onchange="calcBillTotal()">
+  `;
+  container.appendChild(row);
+}
+
+document.getElementById('bill-add-row').addEventListener('click', function(){
+  addBillRow(-1);
+});
+
+function calcBillTotal(){
+  const rates = Array.from(document.querySelectorAll('.bill-rate')).map(el => parseFloat(el.value) || 0);
+  const total = rates.reduce((a, b) => a + b, 0);
+  document.getElementById('bill-total').value = total.toFixed(2);
+  convertNumberToWords(total);
+}
+
+document.getElementById('bill-save').addEventListener('click', function(){
+  const customer = document.getElementById('bill-cust').value;
+  const amount = parseFloat(document.getElementById('bill-total').value);
+  const desc = document.querySelectorAll('.bill-desc');
+  const rates = document.querySelectorAll('.bill-rate');
+
+  if(!customer || amount <= 0){
+    alert('Enter customer name and amount');
+    return;
+  }
+
+  const items = [];
+  desc.forEach((d, i) => {
+    const rate = parseFloat(rates[i].value) || 0;
+    if(d.value && rate > 0){
+      items.push({ desc: d.value, rate });
+    }
+  });
+
+  if(items.length === 0){
+    alert('Add at least one item');
+    return;
+  }
+
+  const bill = {
+    memoNo: document.getElementById('bill-memo').value,
+    date: document.getElementById('bill-date').value,
+    staff: currentUser,
+    shop: currentShop,
+    customer,
+    mobile: document.getElementById('bill-mob').value,
+    address: document.getElementById('bill-addr').value,
+    items,
+    amount,
+    words: document.getElementById('bill-words').value,
+    timestamp: new Date().toLocaleTimeString()
+  };
+
+  addBill(bill).then(() => {
+    document.getElementById('bill-success').style.display = 'block';
+    setTimeout(() => {
+      document.getElementById('bill-success').style.display = 'none';
+    }, 3000);
+    clearBillForm();
+  }).catch(err => {
+    document.getElementById('bill-error').textContent = 'Could not save — check your internet connection.';
+    document.getElementById('bill-error').style.display = 'block';
+    console.error(err);
+  });
+});
+
+document.getElementById('bill-clear').addEventListener('click', clearBillForm);
+
+function clearBillForm(){
+  document.getElementById('bill-cust').value = '';
+  document.getElementById('bill-mob').value = '';
+  document.getElementById('bill-addr').value = '';
+  document.querySelectorAll('.bill-desc').forEach(el => {
+    const defaults = ['Xerox', 'E-Sevai', 'Pan Card', 'Application', 'Lamination'];
+    el.value = defaults[Array.from(document.querySelectorAll('.bill-desc')).indexOf(el)] || '';
+  });
+  document.querySelectorAll('.bill-rate').forEach(el => el.value = '');
+  document.getElementById('bill-total').value = '0';
+  document.getElementById('bill-words').value = '';
+  generateBillNo();
+}
+
+document.getElementById('bill-print').addEventListener('click', function(){
+  const customer = document.getElementById('bill-cust').value;
+  const amount = parseFloat(document.getElementById('bill-total').value);
+  if(!customer || amount <= 0){
+    alert('Enter customer name and amount first');
+    return;
+  }
+  const items = [];
+  document.querySelectorAll('.bill-desc').forEach((d, i) => {
+    const rate = parseFloat(document.querySelectorAll('.bill-rate')[i].value) || 0;
+    if(d.value && rate > 0) items.push({ desc: d.value, rate });
+  });
+  const previewBill = {
+    memoNo: document.getElementById('bill-memo').value,
+    date: document.getElementById('bill-date').value,
+    staff: currentUser,
+    shop: currentShop,
+    customer,
+    mobile: document.getElementById('bill-mob').value,
+    items,
+    amount,
+    words: document.getElementById('bill-words').value
+  };
+  document.getElementById('bill-preview').innerHTML = buildBillPreviewHtml(previewBill);
+  document.getElementById('bill-modal').classList.add('active');
+});
+
+function convertNumberToWords(num, targetFieldId) {
+  targetFieldId = targetFieldId || 'bill-words';
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  function convertBelow1000(n) {
+    if (n === 0) return '';
+    else if (n < 10) return ones[n];
+    else if (n < 20) return teens[n - 10];
+    else if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
+    else return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' ' + convertBelow1000(n % 100) : '');
+  }
+  
+  if (num === 0) {
+    document.getElementById(targetFieldId).value = 'Zero Rupees Only';
+    return;
+  }
+  
+  const crores = Math.floor(num / 10000000);
+  const lakhs = Math.floor((num % 10000000) / 100000);
+  const thousands = Math.floor((num % 100000) / 1000);
+  const hundreds = Math.floor(num % 1000);
+  
+  let words = '';
+  if (crores > 0) words += convertBelow1000(crores) + ' Crore ';
+  if (lakhs > 0) words += convertBelow1000(lakhs) + ' Lakh ';
+  if (thousands > 0) words += convertBelow1000(thousands) + ' Thousand ';
+  if (hundreds > 0) words += convertBelow1000(hundreds);
+  
+  document.getElementById(targetFieldId).value = words.trim() + ' Rupees Only';
+}
+
+// ============ STAFF HISTORY ============
+function renderStaffHistory(){
+  const myIncome = allEntries.filter(e => e.staff === currentUser).sort((a, b) => b.date.localeCompare(a.date));
+  const myBills = allBills.filter(b => b.staff === currentUser).sort((a, b) => b.date.localeCompare(a.date));
+
+  const incomeBody = document.getElementById('history-income-tbody');
+  if(myIncome.length === 0){
+    incomeBody.innerHTML = '<tr><td colspan="9" class="empty-note">No entries</td></tr>';
+  } else {
+    incomeBody.innerHTML = myIncome.map(e => `
+      <tr>
+        <td>${e.date}</td>
+        <td>₹${e.esevai.toFixed(2)}</td>
+        <td>₹${e.app.toFixed(2)}</td>
+        <td>₹${e.eb.toFixed(2)}</td>
+        <td>₹${e.pan.toFixed(2)}</td>
+        <td>₹${e.xerox.toFixed(2)}</td>
+        <td>₹${e.lami.toFixed(2)}</td>
+        <td>₹${e.others.toFixed(2)}</td>
+        <td><strong>₹${e.total.toFixed(2)}</strong></td>
+      </tr>
+    `).join('');
+  }
+
+  const billsBody = document.getElementById('history-bills-tbody');
+  if(myBills.length === 0){
+    billsBody.innerHTML = '<tr><td colspan="4" class="empty-note">No bills</td></tr>';
+  } else {
+    billsBody.innerHTML = myBills.map(b => `
+      <tr>
+        <td><strong>${b.memoNo}</strong></td>
+        <td>${b.date}</td>
+        <td>${b.customer}</td>
+        <td>₹${b.amount.toFixed(2)}</td>
+      </tr>
+    `).join('');
+  }
+}
+
+
+
+// ============ STAFF MANAGEMENT (Admin) ============
+function renderStaffManagement(){
+  const tbody = document.getElementById('staff-mgmt-tbody');
+  if(!tbody) return;
+  if(allStaff.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-note">No staff yet</td></tr>';
+    return;
+  }
+  const sorted = [...allStaff].sort((a,b) => a.name.localeCompare(b.name));
+  tbody.innerHTML = sorted.map(s => {
+    let statusHtml;
+    if(s.status === 'Active'){
+      statusHtml = '<span class="status-active">Active</span>';
+    } else {
+      statusHtml = `<span class="status-active" style="background:var(--amber-light);color:var(--amber);">${s.status}</span>`;
+    }
+    return `
+      <tr>
+        <td>${s.name}</td>
+        <td>${statusHtml}</td>
+        <td>₹${Number(s.dailySalary || DEFAULT_DAILY_SALARY).toFixed(2)}</td>
+        <td>
+          <button class="btn btn-outline btn-small" onclick="editStaff('${s.id}')">Edit</button>
+          <button class="btn btn-outline btn-small" onclick="removeStaff('${s.id}')" style="color:var(--amber);border-color:var(--amber);">Remove</button>
+          <button class="btn btn-outline btn-small" onclick="deleteStaff('${s.id}')" style="color:var(--red);border-color:var(--red);">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+document.getElementById('staff-add-btn').addEventListener('click', function(){
+  const name = document.getElementById('staff-add-name').value.trim();
+  const salary = parseFloat(document.getElementById('staff-add-salary').value) || DEFAULT_DAILY_SALARY;
+  if(!name){ alert('Enter staff name'); return; }
+  if(allStaff.some(s => s.name.toLowerCase() === name.toLowerCase())){ alert('Staff with this name already exists'); return; }
+  db.collection('staff').add({ name, status: 'Active', dailySalary: salary }).then(() => {
+    document.getElementById('staff-add-name').value = '';
+    document.getElementById('staff-add-salary').value = '';
+  }).catch(err => { alert('Could not save staff — check internet connection.'); console.error(err); });
+});
+
+function editStaff(id){
+  const staff = allStaff.find(s => s.id === id);
+  if(!staff) return;
+  const newName = prompt('Edit staff name:', staff.name);
+  if(newName === null) return; // cancelled
+  const trimmed = newName.trim();
+  if(!trimmed){ alert('Name cannot be empty'); return; }
+  const newSalaryStr = prompt('Edit daily salary (₹):', staff.dailySalary || DEFAULT_DAILY_SALARY);
+  if(newSalaryStr === null) return;
+  const newSalary = parseFloat(newSalaryStr) || staff.dailySalary || DEFAULT_DAILY_SALARY;
+  db.collection('staff').doc(id).update({ name: trimmed, dailySalary: newSalary }).catch(err => {
+    alert('Could not update staff — check internet connection.'); console.error(err);
+  });
+}
+
+function removeStaff(id){
+  const staff = allStaff.find(s => s.id === id);
+  if(!staff) return;
+  const confirmed = confirm(`Mark "${staff.name}" as Temporary Leave / Removed?\n\nThis is for temporary situations (e.g. long leave). Their data stays safe in Firebase and they can be restored later by editing their status back.`);
+  if(!confirmed) return;
+  db.collection('staff').doc(id).update({ status: 'Temporary Leave' }).catch(err => {
+    alert('Could not update staff — check internet connection.'); console.error(err);
+  });
+}
+
+function deleteStaff(id){
+  const staff = allStaff.find(s => s.id === id);
+  if(!staff) return;
+  const confirmed = confirm(`⚠️ PERMANENT DELETE\n\nThis will permanently delete "${staff.name}" from Staff Management. This cannot be undone.\n\nClick OK to delete permanently, or Cancel to keep this staff member.`);
+  if(!confirmed) return;
+  db.collection('staff').doc(id).delete().catch(err => {
+    alert('Could not delete staff — check internet connection.'); console.error(err);
+  });
+}
+
+// A staff member can be restored from Temporary Leave back to Active by
+// editing them — reuse editStaff's prompt flow but for status specifically.
+function restoreStaffPrompt(id){
+  db.collection('staff').doc(id).update({ status: 'Active' });
+}
+
+// ============ ATTENDANCE (Admin Only) ============
+function todayDateStr(){
+  return new Date().toISOString().split('T')[0];
+}
+function isSundayDate(dateStr){
+  // Parse as local date to avoid timezone shifting the weekday.
+  const [y,m,d] = dateStr.split('-').map(Number);
+  return new Date(y, m-1, d).getDay() === 0;
+}
+
+function populateAttendanceStaffDropdown(){
+  const sel = document.getElementById('att-staff');
+  if(!sel) return;
+  const activeStaff = allStaff.filter(s => s.status === 'Active');
+  const list = activeStaff.length > 0 ? activeStaff.map(s => s.name) : STAFF_LIST;
+  const prevValue = sel.value;
+  sel.innerHTML = list.map(n => `<option value="${n}">${n}</option>`).join('');
+  if(list.includes(prevValue)) sel.value = prevValue;
+
+  const dateField = document.getElementById('att-date');
+  const today = todayDateStr();
+  dateField.value = today;
+  document.getElementById('att-today-date').textContent = today;
+
+  const sundayNote = document.getElementById('att-sunday-note');
+  const statusSel = document.getElementById('att-status');
+  if(isSundayDate(today)){
+    sundayNote.style.display = 'block';
+    statusSel.value = 'Leave';
+    statusSel.disabled = true;
+    autoMarkSundayLeave(list, today);
+  } else {
+    sundayNote.style.display = 'none';
+    statusSel.disabled = false;
+  }
+}
+
+// Every Sunday, automatically mark Leave for all active staff so Admin
+// never has to do it by hand. Skips staff who already have a record.
+function autoMarkSundayLeave(staffNames, dateStr){
+  staffNames.forEach(name => {
+    const docId = `${name}_${dateStr}`;
+    const already = allAttendance.find(a => a.id === docId);
+    if(already) return;
+    db.collection('attendance').doc(docId).set({
+      staff: name, date: dateStr, status: 'Leave', auto: true
+    }).catch(err => console.error('sunday auto-leave failed:', err));
+  });
+}
+
+document.getElementById('att-submit').addEventListener('click', function(){
+  const staff = document.getElementById('att-staff').value;
+  const date = document.getElementById('att-date').value;
+  const status = document.getElementById('att-status').value;
+  if(!staff || !date){ alert('Select staff'); return; }
+
+  const docId = `${staff}_${date}`;
+  db.collection('attendance').doc(docId).set({ staff, date, status }).then(() => {
+    document.getElementById('att-success').style.display = 'block';
+    setTimeout(() => { document.getElementById('att-success').style.display = 'none'; }, 2500);
+  }).catch(err => {
+    alert('Could not save attendance — check internet connection.'); console.error(err);
+  });
+});
+
+function renderTodayAttendance(){
+  const tbody = document.getElementById('att-today-tbody');
+  if(!tbody) return;
+  const today = todayDateStr();
+  const todays = allAttendance.filter(a => a.date === today).sort((a,b) => a.staff.localeCompare(b.staff));
+  if(todays.length === 0){
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-note">No records yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = todays.map(a => `
+    <tr>
+      <td>${a.staff}</td>
+      <td>${a.date}</td>
+      <td>${a.status === 'Present' ? '<span class="status-active">Present</span>' : `<span class="status-active" style="background:var(--red-light);color:var(--red);">${a.status}</span>`}</td>
+    </tr>
+  `).join('');
+}
+
+// ============ PAYROLL (Admin) ============
+document.getElementById('payroll-load-btn').addEventListener('click', renderPayroll);
+
+function renderPayroll(){
+  const tbody = document.getElementById('payroll-tbody');
+  if(!tbody) return;
+  const monthInput = document.getElementById('payroll-month');
+  let month = monthInput.value;
+  if(!month){ month = todayDateStr().substring(0,7); monthInput.value = month; }
+
+  const activeStaff = allStaff.filter(s => s.status === 'Active');
+  const staffToShow = activeStaff.length > 0 ? activeStaff : STAFF_LIST.map(name => ({ id: null, name, dailySalary: DEFAULT_DAILY_SALARY }));
+
+  if(staffToShow.length === 0){
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-note">No staff found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = staffToShow.map(s => {
+    const dailySalary = Number(s.dailySalary || DEFAULT_DAILY_SALARY);
+    // Sunday-auto Leave records mean Sundays never count as Present, so they
+    // never inflate the payable working-day count.
+    const presentDays = allAttendance.filter(a => a.staff === s.name && a.date.startsWith(month) && a.status === 'Present').length;
+    const monthlySalary = dailySalary * presentDays;
+
+    const payrollDocId = `${s.name}_${month}`;
+    const payrollRec = allPayroll.find(p => p.id === payrollDocId);
+    const paid = payrollRec ? Number(payrollRec.paidAmount || 0) : 0;
+    const pending = Math.max(monthlySalary - paid, 0);
+    const status = paid >= monthlySalary && monthlySalary > 0 ? 'Paid' : 'Pending';
+
+    return `
+      <tr>
+        <td><strong>${s.name}</strong></td>
+        <td><input type="number" class="payroll-daily-salary" data-staff="${s.name}" data-staffid="${s.id || ''}" value="${dailySalary}" step="1" min="0" style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;"></td>
+        <td>${presentDays}</td>
+        <td class="payroll-monthly-salary" data-staff="${s.name}">₹${monthlySalary.toFixed(2)}</td>
+        <td><input type="number" class="payroll-paid" data-staff="${s.name}" value="${paid}" step="0.01" min="0" style="width:100px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;"></td>
+        <td>₹${pending.toFixed(2)}</td>
+        <td>${status === 'Paid' ? '<span class="status-active">Paid</span>' : '<span class="status-active" style="background:var(--amber-light);color:var(--amber);">Pending</span>'}</td>
+        <td><button class="btn btn-teal btn-small" onclick="savePayrollRow('${s.name}','${s.id || ''}','${month}')">Save</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function savePayrollRow(staffName, staffId, month){
+  const row = Array.from(document.querySelectorAll('.payroll-paid')).find(el => el.dataset.staff === staffName);
+  const salaryInput = Array.from(document.querySelectorAll('.payroll-daily-salary')).find(el => el.dataset.staff === staffName);
+  const paidAmount = parseFloat(row.value) || 0;
+  const dailySalary = parseFloat(salaryInput.value) || DEFAULT_DAILY_SALARY;
+
+  const presentDays = allAttendance.filter(a => a.staff === staffName && a.date.startsWith(month) && a.status === 'Present').length;
+  const monthlySalary = dailySalary * presentDays;
+
+  const docId = `${staffName}_${month}`;
+  const payrollErrorEl = document.getElementById('payroll-error');
+
+  // Payment amount validation: the amount being paid must never push the
+  // total paid above the calculated monthly salary (i.e. above the current
+  // pending amount, based on what was already saved before this edit).
+  const previousPayrollRec = allPayroll.find(p => p.id === docId);
+  const previousPaid = previousPayrollRec ? Number(previousPayrollRec.paidAmount || 0) : 0;
+  const pendingBeforeThisSave = Math.max(monthlySalary - previousPaid, 0);
+
+  if(paidAmount > monthlySalary){
+    if(payrollErrorEl){
+      payrollErrorEl.textContent = `Payment amount cannot exceed the pending amount of ₹${pendingBeforeThisSave.toFixed(2)}.`;
+      payrollErrorEl.style.display = 'block';
+      setTimeout(() => { payrollErrorEl.style.display = 'none'; }, 4000);
+    }
+    return;
+  }
+  if(payrollErrorEl) payrollErrorEl.style.display = 'none';
+
+  const status = paidAmount >= monthlySalary && monthlySalary > 0 ? 'Paid' : 'Pending';
+  const savePayroll = db.collection('payroll').doc(docId).set({
+    staff: staffName, month, dailySalary, monthlySalary, paidAmount, status
+  });
+
+  // Persist the (possibly changed) daily salary onto the staff record too,
+  // so it's used for future months automatically.
+  const staffUpdate = staffId ? db.collection('staff').doc(staffId).update({ dailySalary }) : Promise.resolve();
+
+  Promise.all([savePayroll, staffUpdate]).then(() => {
+    document.getElementById('payroll-success').style.display = 'block';
+    setTimeout(() => { document.getElementById('payroll-success').style.display = 'none'; }, 2500);
+  }).catch(err => {
+    alert('Could not save payroll — check internet connection.'); console.error(err);
+  });
+}
+
+// ============ ADMIN DAILY COLLECTION — Daily Collection Register ============
+// Ported from "collection-register6.html": same fields, layout, buttons,
+// calculations, validation and Add Row behaviour as that file. Save/Load
+// go through Firebase (collection 'dailyRegister', one document per
+// shop+date) instead of localStorage, and the page uses the site's
+// existing shop switcher instead of its own Shop 1/Shop 2 tabs.
+
+const DCR_DEFAULT_SERVICES = [
+  "Typing","Xerox","Lamination","Print","Application",
+  "E Service","Pan Card","Passport","EB Bill","GPay","Computer","OS Install",
+  "Others 1","Others 2"
+];
+
+function dcrFmt(n){
+  n = Math.round(n || 0);
+  return (n<0?"-":"") + "₹" + Math.abs(n).toLocaleString('en-IN');
+}
+
+// Admin/Staff can both save entries for the same shop+date (separate
+// customers), so records are no longer looked up by shop+date — each is
+// its own document. dcrEditingId tracks whether Save should create a new
+// record (null) or update one specific existing record (its doc id).
+let dcrEditingId = null;
+
+function dcrRenderServiceRows(values){
+  const body = document.getElementById('dcr-svc-body');
+  const rows = (values && values.length) ? values : DCR_DEFAULT_SERVICES.map(name => ({name, bank:0, charge:0}));
+  body.innerHTML = '';
+  rows.forEach((v, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="dcr-svc-name-input" data-idx="${idx}" data-field="name" value="${v.name}"></td>
+      <td class="num"><input type="number" class="dcr-num-input" data-idx="${idx}" data-field="bank" value="${v.bank}"></td>
+      <td class="num"><input type="number" class="dcr-num-input" data-idx="${idx}" data-field="charge" value="${v.charge}"></td>
+    `;
+    body.appendChild(tr);
+  });
+  dcrAttachRowListeners();
+  dcrUpdateTotals();
+}
+
+function dcrAttachRowListeners(){
+  document.querySelectorAll('#dcr-svc-body input').forEach(inp => {
+    inp.addEventListener('input', dcrUpdateTotals);
+  });
+}
+
+function dcrReadServiceRows(){
+  const rows = [];
+  document.querySelectorAll('#dcr-svc-body tr').forEach(tr => {
+    const nameInp = tr.querySelector('[data-field="name"]');
+    const bankInp = tr.querySelector('[data-field="bank"]');
+    const chgInp = tr.querySelector('[data-field="charge"]');
+    rows.push({
+      name: nameInp.value || '',
+      bank: parseFloat(bankInp.value) || 0,
+      charge: parseFloat(chgInp.value) || 0
+    });
+  });
+  return rows;
+}
+
+function dcrUpdateTotals(){
+  const rows = dcrReadServiceRows();
+  const bankTotal = rows.reduce((s,r) => s + r.bank, 0);
+  const chgTotal = rows.reduce((s,r) => s + r.charge, 0);
+  document.getElementById('dcr-bank-total').textContent = dcrFmt(bankTotal).replace('₹','');
+  document.getElementById('dcr-chg-total').textContent = dcrFmt(chgTotal).replace('₹','');
+  return {bankTotal, chgTotal};
+}
+
+// New feature (per Admin's request): lets the register grow past the
+// default 14 services without losing whatever's already been typed.
+document.getElementById('dcr-add-row').addEventListener('click', function(){
+  const rows = dcrReadServiceRows();
+  rows.push({name:'', bank:0, charge:0});
+  dcrRenderServiceRows(rows);
+});
+
+function dcrCalculate(){
+  const {bankTotal, chgTotal} = dcrUpdateTotals();
+  const opening = parseFloat(document.getElementById('dcr-opening').value) || 0;
+  const closing = parseFloat(document.getElementById('dcr-closing').value) || 0;
+  const bankPaid = parseFloat(document.getElementById('dcr-bankpaid').value) || 0;
+  const expense = parseFloat(document.getElementById('dcr-expense').value) || 0;
+
+  const cashCollected = bankTotal + chgTotal;
+  const expectedClosing = opening + cashCollected - bankPaid - expense;
+  const diff = closing - expectedClosing;
+  const profit = chgTotal - expense;
+
+  const resultCard = document.getElementById('dcr-result-card');
+  const body = document.getElementById('dcr-result-body');
+
+  let diffNote = '';
+  if (Math.abs(diff) >= 1){
+    if (diff > 0){
+      diffNote = `<div class="dcr-note over">Cash is ${dcrFmt(diff)} more than expected — check for an entry missed above, or extra cash from elsewhere.</div>`;
+    } else {
+      diffNote = `<div class="dcr-note short">Cash is ${dcrFmt(Math.abs(diff))} short of expected — check for an unrecorded expense or a missed entry.</div>`;
+    }
+  }
+
+  body.innerHTML = `
+    <div class="dcr-result-row"><span>Total service charge (shop's earning)</span><span class="val">${dcrFmt(chgTotal)}</span></div>
+    <div class="dcr-result-row"><span>Total bank collection (customer's govt/bank fee, pass-through)</span><span class="val">${dcrFmt(bankTotal)}</span></div>
+    <div class="dcr-result-row"><span>Total cash collected from customers</span><span class="val">${dcrFmt(cashCollected)}</span></div>
+    <div class="dcr-result-row"><span>Opening amount</span><span class="val">${dcrFmt(opening)}</span></div>
+    <div class="dcr-result-row"><span>Less: bank amount paid out today</span><span class="val">${dcrFmt(bankPaid)}</span></div>
+    <div class="dcr-result-row"><span>Less: expense</span><span class="val">${dcrFmt(expense)}</span></div>
+    <div class="dcr-result-row total"><span>Expected closing cash</span><span class="val">${dcrFmt(expectedClosing)}</span></div>
+    ${diffNote}
+    <div class="dcr-profit-box ${profit>=0?'pos':'neg'}">
+      <div class="lbl">Profit for the day</div>
+      <div class="amt">${dcrFmt(profit)}</div>
+    </div>
+  `;
+  resultCard.style.display = 'block';
+  return {opening, closing, bankPaid, expense, bankTotal, chgTotal, profit};
+}
+
+function dcrSetTodayDate() {
+  const dateInput = document.getElementById('dcr-date');
+
+  if (!dateInput) return;
+
+  const now = new Date();
+  const today =
+    now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0');
+
+  dateInput.min = today;
+
+  if (!dateInput.value || dateInput.value < today) {
+    dateInput.value = today;
+  }
+} 
+
+function dcrSetTodayOnly() {
+  const dateInput = document.getElementById('dcr-date');
+
+  if (!dateInput) return;
+
+  const now = new Date();
+
+  const today =
+    now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0');
+
+  dateInput.min = today;
+  dateInput.max = today;
+  dateInput.value = today;
+}
+
+function dcrSaveEntry(){
+  const msgEl = document.getElementById('dcr-save-msg');
+  if(currentShop === 'all'){
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = 'Switch to a single shop before saving, so it gets tagged correctly.';
+    return;
+  }
+  const date = document.getElementById('dcr-date').value;
+  if(!date){
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = 'Pick a date first.';
+    return;
+  }
+  // "Today only" applies to brand-new entries. An entry being edited keeps
+  // its own original date (the date field is locked while editing).
+  if(!dcrEditingId){
+    const now = new Date();
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    if (date !== today) {
+      msgEl.className = 'dcr-save-msg err';
+      msgEl.textContent = 'Today date only allowed.';
+      return;
+    }
+  }
+  const rows = dcrReadServiceRows();
+  const data = dcrCalculate();
+  const entry = {
+    shop: currentShop,
+    date,
+    staff: 'Admin',
+    role: 'admin',
+    rows,
+    opening: data.opening,
+    closing: data.closing,
+    bankPaid: data.bankPaid,
+    expense: data.expense,
+    bankTotal: data.bankTotal,
+    chgTotal: data.chgTotal,
+    profit: data.profit,
+    updatedAt: new Date().toISOString()
+  };
+  // Every Daily Collection Register save is its own document — Admin and
+  // Staff can both save separate entries for the same shop and same day
+  // without overwriting one another. Editing an existing entry (via the
+  // Edit button in the history table below) updates that one document.
+  const savePromise = dcrEditingId
+    ? setDailyRegisterEntry(dcrEditingId, entry)
+    : addDailyRegisterEntry(entry);
+  savePromise.then(() => {
+    msgEl.className = 'dcr-save-msg';
+    msgEl.textContent = dcrEditingId ? `Updated entry for ${date}.` : `Saved a new entry for ${date}.`;
+    if(dcrEditingId){ dcrExitEditMode(); }
+  }).catch(err => {
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = 'Could not save — check your internet connection.';
+    console.error(err);
+  });
+  setTimeout(()=>{ msgEl.textContent=''; }, 4000);
+}
+
+function dcrApplyEntryToForm(entry){
+  document.getElementById('dcr-opening').value = entry.opening;
+  document.getElementById('dcr-closing').value = entry.closing;
+  document.getElementById('dcr-bankpaid').value = entry.bankPaid;
+  document.getElementById('dcr-expense').value = entry.expense;
+  dcrRenderServiceRows(entry.rows);
+  dcrCalculate();
+}
+
+function dcrResetFormBlank(){
+  document.getElementById('dcr-opening').value = 0;
+  document.getElementById('dcr-closing').value = 0;
+  document.getElementById('dcr-bankpaid').value = 0;
+  document.getElementById('dcr-expense').value = 0;
+  dcrRenderServiceRows();
+  document.getElementById('dcr-result-card').style.display = 'none';
+}
+
+function dcrOnDateChange(){
+  // Multiple entries can exist for the same shop+date now, so changing the
+  // date no longer auto-loads a single "the" entry — it just starts a
+  // fresh blank entry for that date (unless an edit is in progress, in
+  // which case the date field is locked and this won't fire).
+  if(dcrEditingId) return;
+  dcrResetFormBlank();
+}
+
+// Leaves edit mode: clears the editing pointer, re-enables and re-locks
+// the date field back to today. Does NOT blank the form (see dcrCancelEdit
+// for that) — used right after a successful update-save, when the just-
+// edited values should stay visible.
+function dcrExitEditMode(){
+  dcrEditingId = null;
+  const dateEl = document.getElementById('dcr-date');
+  dateEl.removeAttribute('disabled');
+  dcrSetTodayOnly();
+}
+
+// Loads a specific saved record (from the history table's Edit button)
+// into the form for correction. Admin can edit any record.
+function dcrEditEntry(id){
+  const entry = allDailyRegister.find(r => r.id === id);
+  if(!entry) return;
+  dcrEditingId = id;
+  const dateEl = document.getElementById('dcr-date');
+  dateEl.removeAttribute('min');
+  dateEl.removeAttribute('max');
+  dateEl.value = entry.date;
+  dateEl.setAttribute('disabled', 'disabled');
+  dcrApplyEntryToForm(entry);
+  const msgEl = document.getElementById('dcr-save-msg');
+  msgEl.className = 'dcr-save-msg';
+  msgEl.textContent = `Editing entry for ${entry.date} by ${entry.staff || 'Admin'}${entry.role === 'staff' ? ' (Staff)' : ''} — click Clear to cancel.`;
+}
+
+const DCR_PRINT_STYLE = `
+  <style>
+    *{font-family:'Times New Roman', Times, serif !important;}
+    body{color:#1C2541;padding:24px;max-width:640px;margin:0 auto;}
+    h1{font-size:22px;margin:0 0 2px;}
+    h2{font-size:15px;margin:22px 0 8px;color:#9C6B24;}
+    p.sub{color:#4A5170;font-size:13px;margin:0 0 18px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+    th,td{padding:6px 4px;border-bottom:1px solid #DCD3BC;font-size:13px;text-align:left;}
+    th.num,td.num{text-align:right;}
+    tfoot td{border-top:2px solid #1C2541;font-weight:600;}
+    .row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px dotted #DCD3BC;}
+    .row.total{border-top:2px solid #1C2541;border-bottom:none;font-weight:700;padding-top:8px;margin-top:4px;}
+    .profit{margin-top:14px;padding:12px;border-radius:6px;text-align:center;}
+    .profit.pos{background:#E4EEE3;color:#3F6B4B;}
+    .profit.neg{background:#F6E4DC;color:#B3492B;}
+    .profit .amt{font-size:20px;font-weight:700;}
+    @media print{ @page{ margin:14mm; } }
+  </style>
+`;
+
+function dcrPrintEntry(){
+  const data = dcrCalculate();
+  const rows = dcrReadServiceRows();
+  const date = document.getElementById('dcr-date').value;
+  const shopLabel = SHOP_NAMES[currentShop] || currentShop;
+  const rowsHtml = rows.map(r=>`<tr><td>${r.name}</td><td class="num">${dcrFmt(r.bank)}</td><td class="num">${dcrFmt(r.charge)}</td></tr>`).join('');
+
+  const html = `
+    <html><head><title>${shopLabel} — ${date}</title>${DCR_PRINT_STYLE}</head>
+    <body>
+      <h1>Sri Net Park e-Sevai Maiyam</h1>
+      <p class="sub">${shopLabel} · Daily Collection Register · ${date}</p>
+
+      <h2>Service collections</h2>
+      <table>
+        <thead><tr><th>Service</th><th class="num">Bank ₹</th><th class="num">Service charge ₹</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr><td>Total</td><td class="num">${dcrFmt(data.bankTotal)}</td><td class="num">${dcrFmt(data.chgTotal)}</td></tr></tfoot>
+      </table>
+
+      <h2>Cash in hand</h2>
+      <div class="row"><span>Opening amount</span><span>${dcrFmt(data.opening)}</span></div>
+      <div class="row"><span>Closing amount</span><span>${dcrFmt(data.closing)}</span></div>
+      <div class="row"><span>Bank amount paid</span><span>${dcrFmt(data.bankPaid)}</span></div>
+      <div class="row"><span>Expense</span><span>${dcrFmt(data.expense)}</span></div>
+
+      <h2>Result</h2>
+      <div class="row"><span>Total service charge (shop's earning)</span><span>${dcrFmt(data.chgTotal)}</span></div>
+      <div class="row"><span>Total bank collection (pass-through)</span><span>${dcrFmt(data.bankTotal)}</span></div>
+      <div class="row total"><span>Expected closing cash</span><span>${dcrFmt(data.opening + data.bankTotal + data.chgTotal - data.bankPaid - data.expense)}</span></div>
+      <div class="profit ${data.profit>=0?'pos':'neg'}">
+        <div>${shopLabel} profit for the day</div>
+        <div class="amt">${dcrFmt(data.profit)}</div>
+      </div>
+    </body></html>
+  `;
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => w.print();
+  setTimeout(()=>{ try{ w.print(); }catch(e){} }, 300);
+}
+
+function dcrDownloadEntryPDF(){
+  const data = dcrCalculate();
+  const rows = dcrReadServiceRows();
+  const date = document.getElementById('dcr-date').value;
+  const shopLabel = SHOP_NAMES[currentShop] || currentShop;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const rightX = 195;
+  let y = 18;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(15);
+  doc.text('Sri Net Park e-Sevai Maiyam', 14, y); y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90);
+  doc.text(`${shopLabel} - Daily Collection Register - ${date}`, 14, y); y += 10;
+  doc.setTextColor(0);
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('Service collections', 14, y); y += 7;
+  doc.setFontSize(9); doc.setTextColor(90);
+  doc.text('Service', 14, y); doc.text('Bank Rs', 150, y, {align:'right'}); doc.text('Service charge Rs', rightX, y, {align:'right'});
+  doc.setTextColor(0); y += 2; doc.line(14, y, rightX, y); y += 6;
+
+  doc.setFontSize(10);
+  rows.forEach(r=>{
+    doc.text(String(r.name), 14, y);
+    doc.text(dcrFmt(r.bank), 150, y, {align:'right'});
+    doc.text(dcrFmt(r.charge), rightX, y, {align:'right'});
+    y += 6.5;
+    if (y > 270){ doc.addPage(); y = 18; }
+  });
+  doc.line(14, y-2, rightX, y-2);
+  doc.setFont('helvetica','bold');
+  doc.text('Total', 14, y+4);
+  doc.text(dcrFmt(data.bankTotal), 150, y+4, {align:'right'});
+  doc.text(dcrFmt(data.chgTotal), rightX, y+4, {align:'right'});
+  y += 14;
+  doc.setFont('helvetica','normal');
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('Cash in hand', 14, y); y += 7;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  [['Opening amount', data.opening], ['Closing amount', data.closing],
+   ['Bank amount paid', data.bankPaid], ['Expense', data.expense]].forEach(([l,v])=>{
+    doc.text(l, 14, y); doc.text(dcrFmt(v), rightX, y, {align:'right'}); y += 6.5;
+  });
+  y += 6;
+
+  const expectedClosing = data.opening + data.bankTotal + data.chgTotal - data.bankPaid - data.expense;
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('Result', 14, y); y += 7;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  [["Total service charge (shop's earning)", data.chgTotal],
+   ['Total bank collection (pass-through)', data.bankTotal],
+   ['Expected closing cash', expectedClosing]].forEach(([l,v])=>{
+    doc.text(l, 14, y); doc.text(dcrFmt(v), rightX, y, {align:'right'}); y += 6.5;
+  });
+  y += 8;
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  if (data.profit >= 0) doc.setTextColor(63,107,75); else doc.setTextColor(179,73,43);
+  doc.text(`${shopLabel} profit for the day: ${dcrFmt(data.profit)}`, 14, y);
+  doc.setTextColor(0);
+
+  doc.save(`${currentShop}-${date}-daily-register.pdf`);
+}
+
+function dcrMonthLabel(monthValue){
+  const [y,m] = monthValue.split('-').map(Number);
+  const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${names[m-1]} ${y}`;
+}
+
+function dcrDownloadMonthlyReport(){
+  const monthValue = document.getElementById('dcr-month').value;
+  const msgEl = document.getElementById('dcr-monthly-msg');
+  if (!monthValue){
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = 'Pick a month first.';
+    return;
+  }
+  if(currentShop === 'all'){
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = 'Switch to a single shop to download a monthly report.';
+    return;
+  }
+  const shopLabel = SHOP_NAMES[currentShop] || currentShop;
+  const entries = allDailyRegister.filter(r => r.shop === currentShop && r.date.startsWith(monthValue))
+    .sort((a,b) => a.date.localeCompare(b.date));
+  if (entries.length === 0){
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = `No saved entries for ${dcrMonthLabel(monthValue)}.`;
+    setTimeout(()=>{ msgEl.textContent=''; }, 3500);
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 18;
+  doc.setFont('helvetica','bold'); doc.setFontSize(15);
+  doc.text('Sri Net Park e-Sevai Maiyam', 14, y); y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90);
+  doc.text(`${shopLabel} - Monthly report - ${dcrMonthLabel(monthValue)}`, 14, y); y += 10;
+  doc.setTextColor(0);
+
+  const cols = [
+    {label:'Date', x:14, align:'left'},
+    {label:'Opening', x:60, align:'right'},
+    {label:'Closing', x:85, align:'right'},
+    {label:'Bank paid', x:112, align:'right'},
+    {label:'Expense', x:138, align:'right'},
+    {label:'Bank tot', x:163, align:'right'},
+    {label:'Svc tot', x:185, align:'right'},
+    {label:'Profit', x:206, align:'right'}
+  ];
+  doc.setFontSize(8.5); doc.setTextColor(90);
+  cols.forEach(c => doc.text(c.label, c.x, y, {align:c.align}));
+  doc.setTextColor(0); y += 2; doc.line(14, y, 206, y); y += 5.5;
+
+  let totalOpening=0, totalClosing=0, totalBankPaid=0, totalExpense=0, totalBankTot=0, totalChgTot=0, totalProfit=0;
+  doc.setFontSize(8.5);
+  entries.forEach(e=>{
+    totalOpening += e.opening; totalClosing += e.closing; totalBankPaid += e.bankPaid;
+    totalExpense += e.expense; totalBankTot += e.bankTotal; totalChgTot += e.chgTotal; totalProfit += e.profit;
+    doc.text(e.date, 14, y);
+    doc.text(dcrFmt(e.opening), 60, y, {align:'right'});
+    doc.text(dcrFmt(e.closing), 85, y, {align:'right'});
+    doc.text(dcrFmt(e.bankPaid), 112, y, {align:'right'});
+    doc.text(dcrFmt(e.expense), 138, y, {align:'right'});
+    doc.text(dcrFmt(e.bankTotal), 163, y, {align:'right'});
+    doc.text(dcrFmt(e.chgTotal), 185, y, {align:'right'});
+    doc.text(dcrFmt(e.profit), 206, y, {align:'right'});
+    y += 6.5;
+    if (y > 275){ doc.addPage(); y = 18; }
+  });
+
+  doc.line(14, y-2, 206, y-2);
+  doc.setFont('helvetica','bold');
+  doc.text('Total', 14, y+4);
+  doc.text(dcrFmt(totalBankPaid), 112, y+4, {align:'right'});
+  doc.text(dcrFmt(totalExpense), 138, y+4, {align:'right'});
+  doc.text(dcrFmt(totalBankTot), 163, y+4, {align:'right'});
+  doc.text(dcrFmt(totalChgTot), 185, y+4, {align:'right'});
+  doc.text(dcrFmt(totalProfit), 206, y+4, {align:'right'});
+  y += 16;
+  doc.setFont('helvetica','normal');
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(`Days recorded: ${entries.length}`, 14, y); y += 7;
+  doc.text(`Average daily profit: ${dcrFmt(totalProfit / entries.length)}`, 14, y); y += 9;
+
+  doc.setFontSize(13);
+  if (totalProfit >= 0) doc.setTextColor(63,107,75); else doc.setTextColor(179,73,43);
+  doc.text(`${shopLabel} total profit for ${dcrMonthLabel(monthValue)}: ${dcrFmt(totalProfit)}`, 14, y);
+  doc.setTextColor(0);
+
+  doc.save(`${currentShop}-${monthValue}-monthly-report.pdf`);
+  msgEl.className = 'dcr-save-msg';
+  msgEl.textContent = `Downloaded report for ${dcrMonthLabel(monthValue)} (${entries.length} day(s)).`;
+  setTimeout(()=>{ msgEl.textContent=''; }, 3500);
+}
+
+// Daily Collection History card at the bottom of the page — a live list of
+// saved Daily Collection Register entries. This is intentionally separate
+// from "My History" (which shows Bill Format bills only).
+function renderDcrHistory(){
+  const container = document.getElementById('dcr-history-body');
+  if(!container) return;
+  let list = currentShop === 'all' ? allDailyRegister.slice() : allDailyRegister.filter(r => r.shop === currentShop);
+  list.sort((a,b) => b.date.localeCompare(a.date) || (b.updatedAt||'').localeCompare(a.updatedAt||''));
+  if(list.length === 0){
+    container.innerHTML = '<p class="dcr-save-msg" style="margin:0;">No saved entries yet.</p>';
+    return;
+  }
+  const showShopCol = currentShop === 'all';
+  container.innerHTML = `
+    <table class="dcr-history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          ${showShopCol ? '<th>Shop</th>' : ''}
+          <th>Created by</th>
+          <th class="num">Bank ₹</th>
+          <th class="num">Service Charge ₹</th>
+          <th class="num">Profit ₹</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(r => `
+          <tr>
+            <td>${r.date}</td>
+            ${showShopCol ? `<td>${SHOP_NAMES[r.shop] || r.shop}</td>` : ''}
+            <td>${r.staff || '—'}${r.role === 'staff' ? ' (Staff)' : (r.role === 'admin' ? ' (Admin)' : '')}</td>
+            <td class="num">${dcrFmt(r.bankTotal)}</td>
+            <td class="num">${dcrFmt(r.chgTotal)}</td>
+            <td class="num">${dcrFmt(r.profit)}</td>
+            <td>
+              <button class="dcr-del-btn" style="border-color:var(--dcr-ink);color:var(--dcr-ink);" onclick="dcrEditEntry('${r.id}')">Edit</button>
+              <button class="dcr-del-btn" onclick="dcrDeleteHistoryEntry('${r.id}')">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// Admin can delete any Daily Collection Register record (Admin's own or
+// Staff's) — Staff never gets a delete option (see renderSdcrHistory).
+function dcrDeleteHistoryEntry(id){
+  if(currentRole !== 'admin'){
+    alert('Only Admin can delete Daily Collection Register records.');
+    return;
+  }
+  const entry = allDailyRegister.find(r => r.id === id);
+  const label = entry ? `${SHOP_NAMES[entry.shop] || entry.shop} — ${entry.date} (${entry.staff || 'Admin'}${entry.role === 'staff' ? ', Staff' : ''})` : id;
+  const confirmed = confirm(`⚠️ Delete the Daily Collection Register entry for ${label}?\n\nThis cannot be undone.`);
+  if(!confirmed) return;
+  deleteDailyRegisterEntry(id).then(() => {
+    if(dcrEditingId === id){ dcrCancelEdit(); }
+  }).catch(err => {
+    alert('Could not delete — check internet connection.'); console.error(err);
+  });
+}
+
+// Called whenever the Daily Collection page is opened (nav click) or the
+// shop is switched while it's already open. Since several records can now
+// exist for the same shop+date, this always opens a fresh blank form
+// (ready for a new entry) rather than auto-loading any single record —
+// use the Edit button in the history table below to correct a specific
+// saved entry.
+function initDcrPage(){
+  dcrExitEditMode();
+  if(currentShop === 'all'){
+    dcrResetFormBlank();
+    document.getElementById('dcr-save-msg').textContent = 'Switch to a single shop to enter a Daily Collection Register entry.';
+  } else {
+    dcrResetFormBlank();
+  }
+  renderDcrHistory();
+}
+
+document.getElementById('dcr-calc').addEventListener('click', dcrCalculate);
+document.getElementById('dcr-save').addEventListener('click', dcrSaveEntry);
+document.getElementById('dcr-print').addEventListener('click', dcrPrintEntry);
+document.getElementById('dcr-pdf').addEventListener('click', dcrDownloadEntryPDF);
+document.getElementById('dcr-date').addEventListener('change', dcrOnDateChange);
+dcrSetTodayOnly();
+// Explicit cancel of an in-progress edit — blanks the form back to a
+// fresh new-entry state and re-locks the date to today.
+function dcrCancelEdit(){
+  dcrExitEditMode();
+  dcrResetFormBlank();
+}
+
+document.getElementById('dcr-clear').addEventListener('click', function(){
+  const msgEl = document.getElementById('dcr-save-msg');
+  if(dcrEditingId){
+    dcrCancelEdit();
+    msgEl.className = 'dcr-save-msg';
+    msgEl.textContent = 'Edit cancelled.';
+  } else {
+    dcrResetFormBlank();
+    msgEl.className = 'dcr-save-msg';
+    msgEl.textContent = 'Cleared. (This does not delete anything already saved.)';
+  }
+  setTimeout(()=>{ msgEl.textContent=''; }, 3000);
+});
+document.getElementById('dcr-monthly').addEventListener('click', dcrDownloadMonthlyReport);
+
+// ============ STAFF DAILY COLLECTION — mirrors Admin's Daily Collection
+// Register (#admin-collection) exactly: same fields, buttons, calculations,
+// validation and Firebase save target ('dailyRegister' collection), just
+// under separate 'sdcr-' element IDs so they can't collide with Admin's
+// identical IDs sitting in the same document. Reuses the generic helpers
+// above (dcrFmt, DCR_DEFAULT_SERVICES, dcrMonthLabel, DCR_PRINT_STYLE,
+// addDailyRegisterEntry, setDailyRegisterEntry) since those don't depend on
+// any admin-only element or state.
+// Permissions (per Admin's decision): a Staff member can Edit only their
+// own saved entries, and never gets a Delete option — only Admin can
+// delete (see dcrDeleteHistoryEntry above).
+let sdcrEditingId = null;
+
+function sdcrRenderServiceRows(values){
+  const body = document.getElementById('sdcr-svc-body');
+  const rows = (values && values.length) ? values : DCR_DEFAULT_SERVICES.map(name => ({name, bank:0, charge:0}));
+  body.innerHTML = '';
+  rows.forEach((v, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="dcr-svc-name-input" data-idx="${idx}" data-field="name" value="${v.name}"></td>
+      <td class="num"><input type="number" class="dcr-num-input" data-idx="${idx}" data-field="bank" value="${v.bank}"></td>
+      <td class="num"><input type="number" class="dcr-num-input" data-idx="${idx}" data-field="charge" value="${v.charge}"></td>
+    `;
+    body.appendChild(tr);
+  });
+  sdcrAttachRowListeners();
+  sdcrUpdateTotals();
+}
+
+function sdcrAttachRowListeners(){
+  document.querySelectorAll('#sdcr-svc-body input').forEach(inp => {
+    inp.addEventListener('input', sdcrUpdateTotals);
+  });
+}
+
+function sdcrReadServiceRows(){
+  const rows = [];
+  document.querySelectorAll('#sdcr-svc-body tr').forEach(tr => {
+    const nameInp = tr.querySelector('[data-field="name"]');
+    const bankInp = tr.querySelector('[data-field="bank"]');
+    const chgInp = tr.querySelector('[data-field="charge"]');
+    rows.push({
+      name: nameInp.value || '',
+      bank: parseFloat(bankInp.value) || 0,
+      charge: parseFloat(chgInp.value) || 0
+    });
+  });
+  return rows;
+}
+
+function sdcrUpdateTotals(){
+  const rows = sdcrReadServiceRows();
+  const bankTotal = rows.reduce((s,r) => s + r.bank, 0);
+  const chgTotal = rows.reduce((s,r) => s + r.charge, 0);
+  document.getElementById('sdcr-bank-total').textContent = dcrFmt(bankTotal).replace('₹','');
+  document.getElementById('sdcr-chg-total').textContent = dcrFmt(chgTotal).replace('₹','');
+  return {bankTotal, chgTotal};
+}
+
+document.getElementById('sdcr-add-row').addEventListener('click', function(){
+  const rows = sdcrReadServiceRows();
+  rows.push({name:'', bank:0, charge:0});
+  sdcrRenderServiceRows(rows);
+});
+
+function sdcrCalculate(){
+  const {bankTotal, chgTotal} = sdcrUpdateTotals();
+  const opening = parseFloat(document.getElementById('sdcr-opening').value) || 0;
+  const closing = parseFloat(document.getElementById('sdcr-closing').value) || 0;
+  const bankPaid = parseFloat(document.getElementById('sdcr-bankpaid').value) || 0;
+  const expense = parseFloat(document.getElementById('sdcr-expense').value) || 0;
+
+  const cashCollected = bankTotal + chgTotal;
+  const expectedClosing = opening + cashCollected - bankPaid - expense;
+  const diff = closing - expectedClosing;
+  const profit = chgTotal - expense;
+
+  const resultCard = document.getElementById('sdcr-result-card');
+  const body = document.getElementById('sdcr-result-body');
+
+  let diffNote = '';
+  if (Math.abs(diff) >= 1){
+    if (diff > 0){
+      diffNote = `<div class="dcr-note over">Cash is ${dcrFmt(diff)} more than expected — check for an entry missed above, or extra cash from elsewhere.</div>`;
+    } else {
+      diffNote = `<div class="dcr-note short">Cash is ${dcrFmt(Math.abs(diff))} short of expected — check for an unrecorded expense or a missed entry.</div>`;
+    }
+  }
+
+  body.innerHTML = `
+    <div class="dcr-result-row"><span>Total service charge (shop's earning)</span><span class="val">${dcrFmt(chgTotal)}</span></div>
+    <div class="dcr-result-row"><span>Total bank collection (customer's govt/bank fee, pass-through)</span><span class="val">${dcrFmt(bankTotal)}</span></div>
+    <div class="dcr-result-row"><span>Total cash collected from customers</span><span class="val">${dcrFmt(cashCollected)}</span></div>
+    <div class="dcr-result-row"><span>Opening amount</span><span class="val">${dcrFmt(opening)}</span></div>
+    <div class="dcr-result-row"><span>Less: bank amount paid out today</span><span class="val">${dcrFmt(bankPaid)}</span></div>
+    <div class="dcr-result-row"><span>Less: expense</span><span class="val">${dcrFmt(expense)}</span></div>
+    <div class="dcr-result-row total"><span>Expected closing cash</span><span class="val">${dcrFmt(expectedClosing)}</span></div>
+    ${diffNote}
+    <div class="dcr-profit-box ${profit>=0?'pos':'neg'}">
+      <div class="lbl">Profit for the day</div>
+      <div class="amt">${dcrFmt(profit)}</div>
+    </div>
+  `;
+  resultCard.style.display = 'block';
+  return {opening, closing, bankPaid, expense, bankTotal, chgTotal, profit};
+}
+
+function sdcrSetTodayOnly() {
+  const dateInput = document.getElementById('sdcr-date');
+  if (!dateInput) return;
+  const now = new Date();
+  const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  dateInput.min = today;
+  dateInput.max = today;
+  dateInput.value = today;
+}
+
+function sdcrOnDateChange(){
+  if(sdcrEditingId) return;
+  sdcrResetFormBlank();
+}
+
+function sdcrExitEditMode(){
+  sdcrEditingId = null;
+  const dateEl = document.getElementById('sdcr-date');
+  dateEl.removeAttribute('disabled');
+  sdcrSetTodayOnly();
+}
+
+function sdcrSaveEntry(){
+  const msgEl = document.getElementById('sdcr-save-msg');
+  const date = document.getElementById('sdcr-date').value;
+  if(!date){
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = 'Pick a date first.';
+    return;
+  }
+  if(!sdcrEditingId){
+    const now = new Date();
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    if(date !== today){
+      msgEl.className = 'dcr-save-msg err';
+      msgEl.textContent = 'Today date only allowed.';
+      return;
+    }
+  }
+  const rows = sdcrReadServiceRows();
+  const data = sdcrCalculate();
+  const entry = {
+    shop: currentShop,
+    date,
+    staff: currentUser,
+    role: 'staff',
+    rows,
+    opening: data.opening,
+    closing: data.closing,
+    bankPaid: data.bankPaid,
+    expense: data.expense,
+    bankTotal: data.bankTotal,
+    chgTotal: data.chgTotal,
+    profit: data.profit,
+    updatedAt: new Date().toISOString()
+  };
+  // Same rule as Admin: every save is its own new document unless a
+  // specific record is being edited, so a same-shop, same-day entry from
+  // Admin (or another staff member) is never overwritten.
+  const savePromise = sdcrEditingId
+    ? setDailyRegisterEntry(sdcrEditingId, entry)
+    : addDailyRegisterEntry(entry);
+  savePromise.then(() => {
+    msgEl.className = 'dcr-save-msg';
+    msgEl.textContent = sdcrEditingId ? `Updated entry for ${date}.` : `Saved a new entry for ${date}.`;
+    if(sdcrEditingId){ sdcrExitEditMode(); }
+  }).catch(err => {
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = 'Could not save — check your internet connection.';
+    console.error(err);
+  });
+  setTimeout(()=>{ msgEl.textContent=''; }, 4000);
+}
+
+function sdcrApplyEntryToForm(entry){
+  document.getElementById('sdcr-opening').value = entry.opening;
+  document.getElementById('sdcr-closing').value = entry.closing;
+  document.getElementById('sdcr-bankpaid').value = entry.bankPaid;
+  document.getElementById('sdcr-expense').value = entry.expense;
+  sdcrRenderServiceRows(entry.rows);
+  sdcrCalculate();
+}
+
+function sdcrResetFormBlank(){
+  document.getElementById('sdcr-opening').value = 0;
+  document.getElementById('sdcr-closing').value = 0;
+  document.getElementById('sdcr-bankpaid').value = 0;
+  document.getElementById('sdcr-expense').value = 0;
+  sdcrRenderServiceRows();
+  document.getElementById('sdcr-result-card').style.display = 'none';
+}
+
+function sdcrPrintEntry(){
+  const data = sdcrCalculate();
+  const rows = sdcrReadServiceRows();
+  const date = document.getElementById('sdcr-date').value;
+  const shopLabel = SHOP_NAMES[currentShop] || currentShop;
+  const rowsHtml = rows.map(r=>`<tr><td>${r.name}</td><td class="num">${dcrFmt(r.bank)}</td><td class="num">${dcrFmt(r.charge)}</td></tr>`).join('');
+
+  const html = `
+    <html><head><title>${shopLabel} — ${date}</title>${DCR_PRINT_STYLE}</head>
+    <body>
+      <h1>Sri Net Park e-Sevai Maiyam</h1>
+      <p class="sub">${shopLabel} · Daily Collection Register · ${date}</p>
+
+      <h2>Service collections</h2>
+      <table>
+        <thead><tr><th>Service</th><th class="num">Bank ₹</th><th class="num">Service charge ₹</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr><td>Total</td><td class="num">${dcrFmt(data.bankTotal)}</td><td class="num">${dcrFmt(data.chgTotal)}</td></tr></tfoot>
+      </table>
+
+      <h2>Cash in hand</h2>
+      <div class="row"><span>Opening amount</span><span>${dcrFmt(data.opening)}</span></div>
+      <div class="row"><span>Closing amount</span><span>${dcrFmt(data.closing)}</span></div>
+      <div class="row"><span>Bank amount paid</span><span>${dcrFmt(data.bankPaid)}</span></div>
+      <div class="row"><span>Expense</span><span>${dcrFmt(data.expense)}</span></div>
+
+      <h2>Result</h2>
+      <div class="row"><span>Total service charge (shop's earning)</span><span>${dcrFmt(data.chgTotal)}</span></div>
+      <div class="row"><span>Total bank collection (pass-through)</span><span>${dcrFmt(data.bankTotal)}</span></div>
+      <div class="row total"><span>Expected closing cash</span><span>${dcrFmt(data.opening + data.bankTotal + data.chgTotal - data.bankPaid - data.expense)}</span></div>
+      <div class="profit ${data.profit>=0?'pos':'neg'}">
+        <div>${shopLabel} profit for the day</div>
+        <div class="amt">${dcrFmt(data.profit)}</div>
+      </div>
+    </body></html>
+  `;
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => w.print();
+  setTimeout(()=>{ try{ w.print(); }catch(e){} }, 300);
+}
+
+function sdcrDownloadEntryPDF(){
+  const data = sdcrCalculate();
+  const rows = sdcrReadServiceRows();
+  const date = document.getElementById('sdcr-date').value;
+  const shopLabel = SHOP_NAMES[currentShop] || currentShop;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const rightX = 195;
+  let y = 18;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(15);
+  doc.text('Sri Net Park e-Sevai Maiyam', 14, y); y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90);
+  doc.text(`${shopLabel} - Daily Collection Register - ${date}`, 14, y); y += 10;
+  doc.setTextColor(0);
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('Service collections', 14, y); y += 7;
+  doc.setFontSize(9); doc.setTextColor(90);
+  doc.text('Service', 14, y); doc.text('Bank Rs', 150, y, {align:'right'}); doc.text('Service charge Rs', rightX, y, {align:'right'});
+  doc.setTextColor(0); y += 2; doc.line(14, y, rightX, y); y += 6;
+
+  doc.setFontSize(10);
+  rows.forEach(r=>{
+    doc.text(String(r.name), 14, y);
+    doc.text(dcrFmt(r.bank), 150, y, {align:'right'});
+    doc.text(dcrFmt(r.charge), rightX, y, {align:'right'});
+    y += 6.5;
+    if (y > 270){ doc.addPage(); y = 18; }
+  });
+  doc.line(14, y-2, rightX, y-2);
+  doc.setFont('helvetica','bold');
+  doc.text('Total', 14, y+4);
+  doc.text(dcrFmt(data.bankTotal), 150, y+4, {align:'right'});
+  doc.text(dcrFmt(data.chgTotal), rightX, y+4, {align:'right'});
+  y += 14;
+  doc.setFont('helvetica','normal');
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('Cash in hand', 14, y); y += 7;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  [['Opening amount', data.opening], ['Closing amount', data.closing],
+   ['Bank amount paid', data.bankPaid], ['Expense', data.expense]].forEach(([l,v])=>{
+    doc.text(l, 14, y); doc.text(dcrFmt(v), rightX, y, {align:'right'}); y += 6.5;
+  });
+  y += 6;
+
+  const expectedClosing = data.opening + data.bankTotal + data.chgTotal - data.bankPaid - data.expense;
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('Result', 14, y); y += 7;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  [["Total service charge (shop's earning)", data.chgTotal],
+   ['Total bank collection (pass-through)', data.bankTotal],
+   ['Expected closing cash', expectedClosing]].forEach(([l,v])=>{
+    doc.text(l, 14, y); doc.text(dcrFmt(v), rightX, y, {align:'right'}); y += 6.5;
+  });
+  y += 8;
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  if (data.profit >= 0) doc.setTextColor(63,107,75); else doc.setTextColor(179,73,43);
+  doc.text(`${shopLabel} profit for the day: ${dcrFmt(data.profit)}`, 14, y);
+  doc.setTextColor(0);
+
+  doc.save(`${currentShop}-${date}-daily-register.pdf`);
+}
+
+function sdcrDownloadMonthlyReport(){
+  const monthValue = document.getElementById('sdcr-month').value;
+  const msgEl = document.getElementById('sdcr-monthly-msg');
+  if (!monthValue){
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = 'Pick a month first.';
+    return;
+  }
+  const shopLabel = SHOP_NAMES[currentShop] || currentShop;
+  const entries = allDailyRegister.filter(r => r.shop === currentShop && r.date.startsWith(monthValue))
+    .sort((a,b) => a.date.localeCompare(b.date));
+  if (entries.length === 0){
+    msgEl.className = 'dcr-save-msg err';
+    msgEl.textContent = `No saved entries for ${dcrMonthLabel(monthValue)}.`;
+    setTimeout(()=>{ msgEl.textContent=''; }, 3500);
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 18;
+  doc.setFont('helvetica','bold'); doc.setFontSize(15);
+  doc.text('Sri Net Park e-Sevai Maiyam', 14, y); y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(90);
+  doc.text(`${shopLabel} - Monthly report - ${dcrMonthLabel(monthValue)}`, 14, y); y += 10;
+  doc.setTextColor(0);
+
+  const cols = [
+    {label:'Date', x:14, align:'left'},
+    {label:'Opening', x:60, align:'right'},
+    {label:'Closing', x:85, align:'right'},
+    {label:'Bank paid', x:112, align:'right'},
+    {label:'Expense', x:138, align:'right'},
+    {label:'Bank tot', x:163, align:'right'},
+    {label:'Svc tot', x:185, align:'right'},
+    {label:'Profit', x:206, align:'right'}
+  ];
+  doc.setFontSize(8.5); doc.setTextColor(90);
+  cols.forEach(c => doc.text(c.label, c.x, y, {align:c.align}));
+  doc.setTextColor(0); y += 2; doc.line(14, y, 206, y); y += 5.5;
+
+  let totalOpening=0, totalClosing=0, totalBankPaid=0, totalExpense=0, totalBankTot=0, totalChgTot=0, totalProfit=0;
+  doc.setFontSize(8.5);
+  entries.forEach(e=>{
+    totalOpening += e.opening; totalClosing += e.closing; totalBankPaid += e.bankPaid;
+    totalExpense += e.expense; totalBankTot += e.bankTotal; totalChgTot += e.chgTotal; totalProfit += e.profit;
+    doc.text(e.date, 14, y);
+    doc.text(dcrFmt(e.opening), 60, y, {align:'right'});
+    doc.text(dcrFmt(e.closing), 85, y, {align:'right'});
+    doc.text(dcrFmt(e.bankPaid), 112, y, {align:'right'});
+    doc.text(dcrFmt(e.expense), 138, y, {align:'right'});
+    doc.text(dcrFmt(e.bankTotal), 163, y, {align:'right'});
+    doc.text(dcrFmt(e.chgTotal), 185, y, {align:'right'});
+    doc.text(dcrFmt(e.profit), 206, y, {align:'right'});
+    y += 6.5;
+    if (y > 275){ doc.addPage(); y = 18; }
+  });
+
+  doc.line(14, y-2, 206, y-2);
+  doc.setFont('helvetica','bold');
+  doc.text('Total', 14, y+4);
+  doc.text(dcrFmt(totalBankPaid), 112, y+4, {align:'right'});
+  doc.text(dcrFmt(totalExpense), 138, y+4, {align:'right'});
+  doc.text(dcrFmt(totalBankTot), 163, y+4, {align:'right'});
+  doc.text(dcrFmt(totalChgTot), 185, y+4, {align:'right'});
+  doc.text(dcrFmt(totalProfit), 206, y+4, {align:'right'});
+  y += 16;
+  doc.setFont('helvetica','normal');
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(`Days recorded: ${entries.length}`, 14, y); y += 7;
+  doc.text(`Average daily profit: ${dcrFmt(totalProfit / entries.length)}`, 14, y); y += 9;
+
+  doc.setFontSize(13);
+  if (totalProfit >= 0) doc.setTextColor(63,107,75); else doc.setTextColor(179,73,43);
+  doc.text(`${shopLabel} total profit for ${dcrMonthLabel(monthValue)}: ${dcrFmt(totalProfit)}`, 14, y);
+  doc.setTextColor(0);
+
+  doc.save(`${currentShop}-${monthValue}-monthly-report.pdf`);
+  msgEl.className = 'dcr-save-msg';
+  msgEl.textContent = `Downloaded report for ${dcrMonthLabel(monthValue)} (${entries.length} day(s)).`;
+  setTimeout(()=>{ msgEl.textContent=''; }, 3500);
+}
+
+// Daily Collection History for Staff — scoped to the staff member's own
+// shop (they never have an 'all' view). Shows every saved entry from that
+// shop, including Admin's and other staff's, but Edit only ever appears
+// on the current staff member's own entries, and Delete never appears
+// (Admin-only, per the confirmed permissions).
+function renderSdcrHistory(){
+  const container = document.getElementById('sdcr-history-body');
+  if(!container) return;
+  let list = allDailyRegister.filter(r => r.shop === currentShop);
+  list.sort((a,b) => b.date.localeCompare(a.date) || (b.updatedAt||'').localeCompare(a.updatedAt||''));
+  if(list.length === 0){
+    container.innerHTML = '<p class="dcr-save-msg" style="margin:0;">No saved entries yet.</p>';
+    return;
+  }
+  container.innerHTML = `
+    <table class="dcr-history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Created by</th>
+          <th class="num">Bank ₹</th>
+          <th class="num">Service Charge ₹</th>
+          <th class="num">Profit ₹</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(r => `
+          <tr>
+            <td>${r.date}</td>
+            <td>${r.staff || '—'}${r.role === 'staff' ? ' (Staff)' : (r.role === 'admin' ? ' (Admin)' : '')}</td>
+            <td class="num">${dcrFmt(r.bankTotal)}</td>
+            <td class="num">${dcrFmt(r.chgTotal)}</td>
+            <td class="num">${dcrFmt(r.profit)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// A staff member may edit only their own saved entries.
+function sdcrEditEntry(id){
+  const entry = allDailyRegister.find(r => r.id === id);
+  if(!entry) return;
+  if(!(entry.role === 'staff' && entry.staff === currentUser)){
+    alert('You can only edit your own saved entries.');
+    return;
+  }
+  sdcrEditingId = id;
+  const dateEl = document.getElementById('sdcr-date');
+  dateEl.removeAttribute('min');
+  dateEl.removeAttribute('max');
+  dateEl.value = entry.date;
+  dateEl.setAttribute('disabled', 'disabled');
+  sdcrApplyEntryToForm(entry);
+  const msgEl = document.getElementById('sdcr-save-msg');
+  msgEl.className = 'dcr-save-msg';
+  msgEl.textContent = `Editing your entry for ${entry.date} — click Clear to cancel.`;
+}
+
+// Called whenever the Staff Daily Collection page is opened (login or nav
+// click). Always opens a fresh blank form for a new entry — multiple
+// entries can exist for the same date, so there's no single record to
+// auto-load. Use Edit in the history table to correct a specific one.
+function initSdcrPage(){
+  sdcrExitEditMode();
+  sdcrResetFormBlank();
+  renderSdcrHistory();
+}
+
+document.getElementById('sdcr-calc').addEventListener('click', sdcrCalculate);
+document.getElementById('sdcr-save').addEventListener('click', sdcrSaveEntry);
+document.getElementById('sdcr-print').addEventListener('click', sdcrPrintEntry);
+document.getElementById('sdcr-pdf').addEventListener('click', sdcrDownloadEntryPDF);
+document.getElementById('sdcr-date').addEventListener('change', sdcrOnDateChange);
+sdcrSetTodayOnly();
+document.getElementById('sdcr-clear').addEventListener('click', function(){
+  const msgEl = document.getElementById('sdcr-save-msg');
+  if(sdcrEditingId){
+    sdcrExitEditMode();
+    sdcrResetFormBlank();
+    msgEl.className = 'dcr-save-msg';
+    msgEl.textContent = 'Edit cancelled.';
+  } else {
+    sdcrResetFormBlank();
+    msgEl.className = 'dcr-save-msg';
+    msgEl.textContent = 'Cleared. (This does not delete anything already saved.)';
+  }
+  setTimeout(()=>{ msgEl.textContent=''; }, 3000);
+});
+document.getElementById('sdcr-monthly').addEventListener('click', sdcrDownloadMonthlyReport);
+
+// ============ ADMIN BILL FORMAT (mirrors Staff Bill Format) ============
+function adminGenerateBillNo(){
+  const date = new Date();
+  const dateStr = date.getFullYear().toString().slice(-2) +
+                  String(date.getMonth() + 1).padStart(2, '0') +
+                  String(date.getDate()).padStart(2, '0');
+  const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+  document.getElementById('admin-bill-memo').value = 'SNP-' + dateStr + '-' + random;
+}
+
+function initAdminBillForm(){
+  const container = document.getElementById('admin-bill-items-container');
+
+  container.innerHTML = '';
+
+  const defaultBillItems = [
+    'Xerox',
+    'E-Sevai',
+    'Pan Card',
+    'Application',
+    'Lamination'
+  ];
+
+  defaultBillItems.forEach(function(itemName){
+    adminAddBillRow(itemName);
+  });
+}
+
+function adminAddBillRow(itemName = ''){
+  const container = document.getElementById('admin-bill-items-container');
+
+  const row = document.createElement('div');
+  row.className = 'item-row';
+
+  row.innerHTML = `
+    <input
+      type="text"
+      class="admin-bill-desc"
+      placeholder="Item description"
+      value="${itemName}"
+    >
+
+    <input
+      type="number"
+      class="admin-bill-rate"
+      placeholder="Amount (₹)"
+      step="0.01"
+      min="0"
+      onchange="calcAdminBillTotal()"
+    >
+  `;
+
+  container.appendChild(row);
+}
+
+document.getElementById('admin-bill-add-row').addEventListener('click', function(){
+  adminAddBillRow(-1);
+});
+
+function calcAdminBillTotal(){
+  const rates = Array.from(document.querySelectorAll('.admin-bill-rate')).map(el => parseFloat(el.value) || 0);
+  const total = rates.reduce((a, b) => a + b, 0);
+  document.getElementById('admin-bill-total').value = total.toFixed(2);
+  convertAdminNumberToWords(total);
+}
+
+function convertAdminNumberToWords(num){
+  convertNumberToWords(num, 'admin-bill-words');
+}
+
+document.getElementById('admin-bill-save').addEventListener('click', function(){
+  if(currentShop === 'all'){
+    alert('Switch to a single shop before saving a bill, so it gets tagged correctly.');
+    return;
+  }
+  const customer = document.getElementById('admin-bill-cust').value;
+  const amount = parseFloat(document.getElementById('admin-bill-total').value);
+  const desc = document.querySelectorAll('.admin-bill-desc');
+  const rates = document.querySelectorAll('.admin-bill-rate');
+
+  if(!customer || amount <= 0){
+    alert('Enter customer name and amount');
+    return;
+  }
+
+  const items = [];
+  desc.forEach((d, i) => {
+    const rate = parseFloat(rates[i].value) || 0;
+    if(d.value && rate > 0){
+      items.push({ desc: d.value, rate });
+    }
+  });
+
+  if(items.length === 0){
+    alert('Add at least one item');
+    return;
+  }
+
+  const bill = {
+    memoNo: document.getElementById('admin-bill-memo').value,
+    date: document.getElementById('admin-bill-date').value,
+    staff: 'Admin',
+    shop: currentShop,
+    customer,
+    mobile: document.getElementById('admin-bill-mob').value,
+    address: document.getElementById('admin-bill-addr').value,
+    items,
+    amount,
+    words: document.getElementById('admin-bill-words').value,
+    timestamp: new Date().toLocaleTimeString()
+  };
+
+  addBill(bill).then(() => {
+    document.getElementById('admin-bill-success').style.display = 'block';
+    setTimeout(() => { document.getElementById('admin-bill-success').style.display = 'none'; }, 3000);
+    clearAdminBillForm();
+  }).catch(err => {
+    document.getElementById('admin-bill-error').textContent = 'Could not save — check your internet connection.';
+    document.getElementById('admin-bill-error').style.display = 'block';
+    console.error(err);
+  });
+});
+
+document.getElementById('admin-bill-clear').addEventListener('click', clearAdminBillForm);
+
+function clearAdminBillForm(){
+  document.getElementById('admin-bill-cust').value = '';
+  document.getElementById('admin-bill-mob').value = '';
+  document.getElementById('admin-bill-addr').value = '';
+  const descEls = document.querySelectorAll('.admin-bill-desc');
+  descEls.forEach((el, i) => {
+    const defaults = ['Xerox', 'E-Sevai', 'Pan Card', 'Application', 'Lamination'];
+    el.value = defaults[i] || '';
+  });
+  document.querySelectorAll('.admin-bill-rate').forEach(el => el.value = '');
+  document.getElementById('admin-bill-total').value = '0';
+  document.getElementById('admin-bill-words').value = '';
+  adminGenerateBillNo();
+}
+
+document.getElementById('admin-bill-print').addEventListener('click', function(){
+  const customer = document.getElementById('admin-bill-cust').value;
+  const amount = parseFloat(document.getElementById('admin-bill-total').value);
+  if(!customer || amount <= 0){
+    alert('Enter customer name and amount first');
+    return;
+  }
+  const items = [];
+  document.querySelectorAll('.admin-bill-desc').forEach((d, i) => {
+    const rate = parseFloat(document.querySelectorAll('.admin-bill-rate')[i].value) || 0;
+    if(d.value && rate > 0) items.push({ desc: d.value, rate });
+  });
+  const previewBill = {
+    memoNo: document.getElementById('admin-bill-memo').value,
+    date: document.getElementById('admin-bill-date').value,
+    staff: 'Admin',
+    shop: currentShop,
+    customer,
+    mobile: document.getElementById('admin-bill-mob').value,
+    items,
+    amount,
+    words: document.getElementById('admin-bill-words').value
+  };
+  document.getElementById('bill-preview').innerHTML = buildBillPreviewHtml(previewBill);
+  document.getElementById('bill-modal').classList.add('active');
+});
+
+// ============ PRODUCTS (Admin manage, Staff view-only) ============
+function renderProductTable(){
+  const tbody = document.getElementById('product-tbody');
+  if(!tbody) return;
+  const search = (document.getElementById('product-search').value || '').toLowerCase();
+  let list = allProducts;
+  if(search) list = list.filter(p => p.name.toLowerCase().includes(search));
+
+  if(list.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-note">No products found</td></tr>';
+    return;
+  }
+  const sorted = [...list].sort((a,b) => (a.shop||'').localeCompare(b.shop) || a.name.localeCompare(b.name));
+  tbody.innerHTML = sorted.map(p => `
+    <tr>
+      <td>${SHOP_NAMES[p.shop] || p.shop}</td>
+      <td>${p.name}</td>
+      <td>₹${Number(p.price).toFixed(2)}</td>
+      <td>
+        <span id="stock-display-${p.id}">${p.stock}</span>
+        <button class="btn btn-outline btn-small" onclick="updateProductStock('${p.id}')" style="margin-left:6px;">Update Stock</button>
+      </td>
+      <td>
+        <button class="btn btn-outline btn-small" onclick="editProduct('${p.id}')">Edit</button>
+        <button class="btn btn-outline btn-small" onclick="removeProduct('${p.id}')" style="color:var(--amber);border-color:var(--amber);">Remove</button>
+        <button class="btn btn-outline btn-small" onclick="deleteProduct('${p.id}')" style="color:var(--red);border-color:var(--red);">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('product-search').addEventListener('input', renderProductTable);
+
+document.getElementById('product-save-btn').addEventListener('click', function(){
+  const editId = document.getElementById('product-edit-id').value;
+  const name = document.getElementById('product-name').value.trim();
+  const price = parseFloat(document.getElementById('product-price').value);
+  const stock = parseInt(document.getElementById('product-stock').value);
+  const shop = document.getElementById('product-shop').value;
+
+  if(!name || isNaN(price) || price < 0 || isNaN(stock) || stock < 0){
+    alert('Fill product name, a valid price, and stock quantity');
+    return;
+  }
+
+  const data = { name, price, stock, shop };
+  const savePromise = editId ? db.collection('products').doc(editId).update(data) : db.collection('products').add(data);
+
+  savePromise.then(() => {
+    document.getElementById('product-success').style.display = 'block';
+    setTimeout(() => { document.getElementById('product-success').style.display = 'none'; }, 2500);
+    resetProductForm();
+  }).catch(err => {
+    alert('Could not save product — check internet connection.'); console.error(err);
+  });
+});
+
+document.getElementById('product-cancel-edit-btn').addEventListener('click', resetProductForm);
+
+// ============ ADMIN: UPLOAD PRODUCT FILE (adds to existing products, same format as manual entry) ============
+function normalizeShopValue(raw){
+  if(!raw) return null;
+  const v = String(raw).trim().toLowerCase();
+  if(v === 'shop1' || v === 'shop 1' || v === '1') return 'shop1';
+  if(v === 'shop2' || v === 'shop 2' || v === '2') return 'shop2';
+  if(v === 'all' || v === 'combined' || v === 'combined shop' || v === 'both') return 'all';
+  return null;
+}
+
+function parseProductRow(row, defaultShop){
+  // Accepts flexible header names so real-world exported files still map correctly.
+  const get = (keys) => {
+    for(const k of Object.keys(row)){
+      const norm = k.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if(keys.includes(norm)) return row[k];
+    }
+    return undefined;
+  };
+  const name = get(['productname', 'name', 'product']);
+  const price = get(['price', 'rate', 'amount']);
+  const stock = get(['quantitystock', 'quantity', 'stock', 'qty']);
+  const shopRaw = get(['shop', 'shopname', 'location']);
+
+  const parsedName = name !== undefined ? String(name).trim() : '';
+  const parsedPrice = parseFloat(price);
+  const parsedStock = parseInt(stock);
+  const parsedShop = normalizeShopValue(shopRaw) || defaultShop;
+
+  if(!parsedName || isNaN(parsedPrice) || parsedPrice < 0 || isNaN(parsedStock) || parsedStock < 0) return null;
+  return { name: parsedName, price: parsedPrice, stock: parsedStock, shop: parsedShop };
+}
+
+async function readProductsFromPDF(file, defaultShop) {
+  const arrayBuffer = await file.arrayBuffer();
+
+  const pdf = await pdfjsLib.getDocument({
+    data: arrayBuffer
+  }).promise;
+
+  const rows = [];
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+
+    const items = textContent.items
+      .map(item => ({
+        text: String(item.str || '').trim(),
+        x: item.transform[4],
+        y: item.transform[5]
+      }))
+      .filter(item => item.text);
+
+    const groupedLines = {};
+
+    items.forEach(item => {
+      const yKey = Math.round(item.y / 3) * 3;
+
+      if (!groupedLines[yKey]) {
+        groupedLines[yKey] = [];
+      }
+
+      groupedLines[yKey].push(item);
+    });
+
+    Object.keys(groupedLines)
+      .sort((a, b) => Number(b) - Number(a))
+      .forEach(yKey => {
+        const lineItems = groupedLines[yKey]
+          .sort((a, b) => a.x - b.x);
+
+        const lineText = lineItems
+          .map(item => item.text)
+          .join(' ');
+
+        if (lineText) {
+          rows.push(lineText);
+        }
+      });
+  }
+
+  const products = [];
+  let skippedCount = 0;
+
+  rows.forEach(line => {
+    const cleanLine = line.replace(/\s+/g, ' ').trim();
+
+    if (
+      !cleanLine ||
+      /product\s*name/i.test(cleanLine) ||
+      /product\s+price/i.test(cleanLine) ||
+      /quantity/i.test(cleanLine) ||
+      /stock/i.test(cleanLine)
+    ) {
+      return;
+    }
+
+    /*
+      Expected PDF line format:
+
+      Pen 10 20
+      Notebook 50 15
+
+      Last two numbers:
+      price and stock quantity
+    */
+
+    const match = cleanLine.match(
+      /^(.+?)\s+₹?\s*(\d+(?:\.\d{1,2})?)\s+(\d+)$/
+    );
+
+    if (!match) {
+      skippedCount++;
+      return;
+    }
+
+    const name = match[1].trim();
+    const price = parseFloat(match[2]);
+    const stock = parseInt(match[3], 10);
+
+    if (
+      !name ||
+      isNaN(price) ||
+      price < 0 ||
+      isNaN(stock) ||
+      stock < 0
+    ) {
+      skippedCount++;
+      return;
+    }
+
+    products.push({
+      name,
+      price,
+      stock,
+      shop: defaultShop
+    });
+  });
+
+  return {
+    products,
+    skippedCount
+  };
+}
+
+document.getElementById('product-upload-btn').addEventListener('click', function() {
+  const fileInput = document.getElementById('product-upload-input');
+  const uploadErrorEl = document.getElementById('product-upload-error');
+  const uploadSuccessEl = document.getElementById('product-upload-success');
+
+  uploadErrorEl.style.display = 'none';
+  uploadSuccessEl.style.display = 'none';
+
+  const file = fileInput.files[0];
+
+  if (!file) {
+    uploadErrorEl.textContent = 'Choose a file to upload first.';
+    uploadErrorEl.style.display = 'block';
+    return;
+  }
+
+  const defaultShop =
+    document.getElementById('product-upload-shop').value;
+
+  const isPDF = file.name.toLowerCase().endsWith('.pdf');
+
+  // PDF upload process
+  if (isPDF) {
+    readProductsFromPDF(file, defaultShop)
+      .then(result => {
+        const validProducts = result.products;
+        const skippedCount = result.skippedCount;
+
+        if (validProducts.length === 0) {
+          uploadErrorEl.textContent =
+            'Could not read products from PDF. Check PDF format.';
+          uploadErrorEl.style.display = 'block';
+          return;
+        }
+
+        return Promise.all(
+          validProducts.map(product => {
+            return db.collection('products').add(product);
+          })
+        ).then(() => {
+          uploadSuccessEl.textContent =
+            `✅ ${validProducts.length} product(s) uploaded successfully.` +
+            (
+              skippedCount > 0
+                ? ` (${skippedCount} row(s) skipped.)`
+                : ''
+            );
+
+          uploadSuccessEl.style.display = 'block';
+          fileInput.value = '';
+
+          setTimeout(() => {
+            uploadSuccessEl.style.display = 'none';
+          }, 4000);
+        });
+      })
+      .catch(error => {
+        console.error('PDF reading error:', error);
+
+        uploadErrorEl.textContent =
+          'Could not read PDF. Use a text-based PDF file.';
+        uploadErrorEl.style.display = 'block';
+      });
+
+    return;
+  }
+
+  // Existing Excel / CSV upload process
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+
+      const workbook = XLSX.read(data, {
+        type: 'array'
+      });
+
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+
+      const rows = XLSX.utils.sheet_to_json(sheet, {
+        defval: ''
+      });
+
+      if (!rows || rows.length === 0) {
+        uploadErrorEl.textContent =
+          'No product rows found in the uploaded file.';
+        uploadErrorEl.style.display = 'block';
+        return;
+      }
+
+      const validProducts = [];
+      let skippedCount = 0;
+
+      rows.forEach(row => {
+        const parsed = parseProductRow(row, defaultShop);
+
+        if (parsed) {
+          validProducts.push(parsed);
+        } else {
+          skippedCount++;
+        }
+      });
+
+      if (validProducts.length === 0) {
+        uploadErrorEl.textContent =
+          'Could not read valid products. Check Product Name, Price, Quantity/Stock columns.';
+        uploadErrorEl.style.display = 'block';
+        return;
+      }
+
+      Promise.all(
+        validProducts.map(product => {
+          return db.collection('products').add(product);
+        })
+      )
+        .then(() => {
+          uploadSuccessEl.textContent =
+            `✅ ${validProducts.length} product(s) uploaded successfully.` +
+            (
+              skippedCount > 0
+                ? ` (${skippedCount} row(s) skipped.)`
+                : ''
+            );
+
+          uploadSuccessEl.style.display = 'block';
+          fileInput.value = '';
+
+          setTimeout(() => {
+            uploadSuccessEl.style.display = 'none';
+          }, 4000);
+        })
+        .catch(error => {
+          console.error('Save error:', error);
+
+          uploadErrorEl.textContent =
+            'Could not save uploaded products.';
+          uploadErrorEl.style.display = 'block';
+        });
+
+    } catch (error) {
+      console.error('Excel/CSV reading error:', error);
+
+      uploadErrorEl.textContent =
+        'Could not read the uploaded file.';
+      uploadErrorEl.style.display = 'block';
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+});
+
+function resetProductForm(){
+  document.getElementById('product-edit-id').value = '';
+  document.getElementById('product-name').value = '';
+  document.getElementById('product-price').value = '';
+  document.getElementById('product-stock').value = '';
+  document.getElementById('product-shop').value = 'all';
+  document.getElementById('product-form-title').textContent = '➕ Add Product';
+  document.getElementById('product-save-btn').textContent = '💾 Save Product';
+  document.getElementById('product-cancel-edit-btn').style.display = 'none';
+}
+
+function editProduct(id){
+  const p = allProducts.find(p => p.id === id);
+  if(!p) return;
+  document.getElementById('product-edit-id').value = id;
+  document.getElementById('product-name').value = p.name;
+  document.getElementById('product-price').value = p.price;
+  document.getElementById('product-stock').value = p.stock;
+  document.getElementById('product-shop').value = p.shop;
+  document.getElementById('product-form-title').textContent = '✏️ Edit Product';
+  document.getElementById('product-save-btn').textContent = '💾 Update Product';
+  document.getElementById('product-cancel-edit-btn').style.display = 'inline-block';
+}
+
+function updateProductStock(id){
+  const p = allProducts.find(p => p.id === id);
+  if(!p) return;
+  const newStock = prompt(`Update stock for "${p.name}":`, p.stock);
+  if(newStock === null) return;
+  const val = parseInt(newStock);
+  if(isNaN(val) || val < 0){ alert('Enter a valid stock number'); return; }
+  db.collection('products').doc(id).update({ stock: val }).catch(err => {
+    alert('Could not update stock — check internet connection.'); console.error(err);
+  });
+}
+
+function removeProduct(id){
+  const p = allProducts.find(p => p.id === id);
+  if(!p) return;
+  const confirmed = confirm(`Temporarily remove "${p.name}" (set stock to 0, keep the record)?`);
+  if(!confirmed) return;
+  db.collection('products').doc(id).update({ stock: 0 }).catch(err => {
+    alert('Could not update product — check internet connection.'); console.error(err);
+  });
+}
+
+function deleteProduct(id){
+  const p = allProducts.find(p => p.id === id);
+  if(!p) return;
+  const confirmed = confirm(`⚠️ PERMANENT DELETE\n\nThis will permanently delete "${p.name}". This cannot be undone.\n\nClick OK to delete permanently, or Cancel to keep this product.`);
+  if(!confirmed) return;
+  db.collection('products').doc(id).delete().catch(err => {
+    alert('Could not delete product — check internet connection.'); console.error(err);
+  });
+}
+
+// Staff-side: view-only, filtered strictly to their own shop.
+function renderStaffProductView(){
+  const tbody = document.getElementById('staff-product-tbody');
+  if(!tbody) return;
+  const shopLabel = document.getElementById('staff-product-shop-label');
+  const myShop = currentShop; // staff always logs into a single shop (shop1/shop2)
+  if(shopLabel) shopLabel.textContent = SHOP_NAMES[myShop] || myShop || '';
+
+  // Staff see their own shop's products PLUS any Combined Shop product
+  // (Combined Shop items are visible to both Shop 1 and Shop 2 staff).
+  const myProducts = allProducts.filter(p => p.shop === myShop || p.shop === 'all');
+  if(myProducts.length === 0){
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-note">No products yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = myProducts.sort((a,b) => a.name.localeCompare(b.name)).map(p => `
+    <tr>
+      <td>${p.name}</td>
+      <td>₹${Number(p.price).toFixed(2)}</td>
+      <td>${p.stock}</td>
+    </tr>
+  `).join('');
+}
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', function(){
+  const today = new Date().toISOString().split('T')[0];
+  // bills-date intentionally left blank so Bill History shows every saved
+  // bill (including previous days) by default; the field is still usable.
+  document.getElementById('monthly-month').value = today.substring(0, 7);
+  document.getElementById('dcr-date').value = today;
+  document.getElementById('dcr-month').value = today.substring(0, 7);
+  document.getElementById('admin-bill-date').value = today;
+  document.getElementById('payroll-month').value = today.substring(0, 7);
+  document.getElementById('product-shop').value = 'all';
+  initAdminBillForm();
+  adminGenerateBillNo();
+  startGlobalListeners();
+});
+</script>
+
+</body>
+</html>
+<script async src="/.netlify/scripts/hud?variant=public" data-nf-variant="public" data-netlify-site-id="d8d33d17-b6d7-4965-8e00-b82c706e0ba4" data-app-host="app.netlify.com"></script>
